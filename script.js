@@ -1,12 +1,9 @@
-// En tu archivo script.js
-
 // --- ¡IMPORTANTE! Pega aquí la URL de tu Web App de Google Script ---
 const googleWebAppUrl = "https://script.google.com/macros/s/AKfycbzwfyiU2xQoHYPU5eCZ0k2eSqs0CzouKYH571IrGJ5k_VlYvnItkIYtc13qJ2nIWY9lJw/exec";
 
 // --- Referencias al DOM ---
 const fileInput = document.getElementById('file-input');
 const imagePreview = document.getElementById('image-preview');
-const uploadPrompt = document.getElementById('upload-prompt');
 const analyzeButton = document.getElementById('analyze-button');
 const buttonText = document.getElementById('button-text');
 const buttonLoader = document.getElementById('button-loader');
@@ -27,8 +24,17 @@ const counterDisplay = document.getElementById('counter-display');
 const premiumModal = document.getElementById('premium-modal');
 const closeModalButton = document.getElementById('close-modal-button');
 const buyPremiumButton = document.getElementById('buy-premium-button');
-const imageUploadContainer = document.getElementById('image-upload-container');
-const copyButton = document.getElementById('copy-button'); // Botón de copiar
+const copyButton = document.getElementById('copy-button');
+const takePhotoButton = document.getElementById('take-photo-button');
+const uploadOptionsContainer = document.getElementById('upload-options-container');
+const imagePreviewContainer = document.getElementById('image-preview-container');
+const changePhotoButton = document.getElementById('change-photo-button');
+const cameraModal = document.getElementById('camera-modal');
+const cameraFeed = document.getElementById('camera-feed');
+const cameraCanvas = document.getElementById('camera-canvas');
+const captureButton = document.getElementById('capture-button');
+const closeCameraButton = document.getElementById('close-camera-button');
+const switchCameraButton = document.getElementById('switch-camera-button');
 
 // --- Estado de la Aplicación ---
 let baseRecipeForOne = null;
@@ -38,19 +44,31 @@ let userLocation = null;
 let currentServings = 1;
 const DAILY_LIMIT = 7;
 let userFingerprint = null;
+let mediaStream = null;
+let currentFacingMode = 'environment';
 
-// --- Inicialización ---
+// --- Inicialización y Event Listeners ---
 window.onload = async function() {
     getLocation();
     userFingerprint = await getFingerprint();
     getAnalysisCount();
+
+    analyzeButton.disabled = true;
+    copyButton.addEventListener('click', copyToClipboard);
+    fileInput.addEventListener('change', handleFileSelect);
+    takePhotoButton.addEventListener('click', openCamera);
+    closeCameraButton.addEventListener('click', closeCamera);
+    captureButton.addEventListener('click', takePicture);
+    switchCameraButton.addEventListener('click', switchCamera);
+    changePhotoButton.addEventListener('click', () => {
+        imagePreviewContainer.classList.add('hidden');
+        uploadOptionsContainer.classList.remove('hidden');
+        imageBase64 = null;
+        analyzeButton.disabled = true;
+    });
 };
 
-analyzeButton.disabled = true;
-copyButton.addEventListener('click', copyToClipboard);
-
-
-// --- Lógica del Contador con Huella Digital ---
+// ... (Las funciones getFingerprint, updateControlsState, etc. no cambian) ...
 async function getFingerprint() {
     try {
         const fp = await FingerprintJS.load();
@@ -65,16 +83,18 @@ async function getFingerprint() {
 function updateControlsState(remaining) {
     if (remaining <= 0) {
         analyzeButton.disabled = true;
-        fileInput.disabled = true;
+        changePhotoButton.disabled = true;
+        takePhotoButton.disabled = true;
+        document.querySelector('label[for="file-input"]').style.pointerEvents = 'none';
         buttonText.textContent = 'Límite diario alcanzado';
-        imageUploadContainer.style.cursor = 'not-allowed';
-        imageUploadContainer.style.opacity = '0.6';
+        uploadOptionsContainer.style.opacity = '0.6';
     } else {
         analyzeButton.disabled = !imageBase64;
-        fileInput.disabled = false;
+        changePhotoButton.disabled = false;
+        takePhotoButton.disabled = false;
+        document.querySelector('label[for="file-input"]').style.pointerEvents = 'auto';
         buttonText.textContent = 'Analizar Plato y Calcular Costo';
-        imageUploadContainer.style.cursor = 'pointer';
-        imageUploadContainer.style.opacity = '1';
+        uploadOptionsContainer.style.opacity = '1';
     }
 }
 
@@ -108,7 +128,6 @@ async function getAnalysisCount() {
     }
 }
 
-// --- Lógica de Geolocalización ---
 function getLocation() {
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -128,38 +147,75 @@ function getLocation() {
     }
 }
 
-// --- Lógica de Carga de Imagen ---
-fileInput.addEventListener('change', (event) => {
+
+// --- Lógica de la Cámara (Simplificada y Mejorada) ---
+
+function handleImageData(dataUrl) {
+    imageBase64 = dataUrl.split(',')[1];
+    imagePreview.src = dataUrl;
+    uploadOptionsContainer.classList.add('hidden');
+    imagePreviewContainer.classList.remove('hidden');
+    analyzeButton.disabled = false;
+}
+
+function handleFileSelect(event) {
     const file = event.target.files[0];
     if (file) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.src = e.target.result;
-            imagePreview.classList.remove('hidden');
-            uploadPrompt.classList.add('hidden');
-            analyzeButton.disabled = false;
-            imageBase64 = e.target.result.split(',')[1];
-        };
+        reader.onload = (e) => handleImageData(e.target.result);
         reader.readAsDataURL(file);
     }
-});
+}
 
-imagePreview.addEventListener('click', () => {
-    if (!fileInput.disabled) {
-        fileInput.click();
+// === FUNCIÓN CLAVE ACTUALIZADA ===
+// Usa la lógica simple de tu prueba para acceder a la cámara.
+function openCamera() {
+    if (mediaStream) {
+        closeCamera(); // Cierra cualquier stream anterior
     }
-});
 
+    const constraints = {
+        video: {
+            facingMode: currentFacingMode // 'environment' para trasera, 'user' para frontal
+        }
+    };
 
-// --- Lógica Principal de Análisis ---
-analyzeButton.addEventListener('click', () => {
-    if (imageBase64) {
-        analyzeImage(imageBase64);
-    } else {
-        showError("Por favor, selecciona una imagen primero.");
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+            mediaStream = stream; // Guardamos el stream para poder cerrarlo después
+            cameraFeed.srcObject = stream;
+            cameraModal.classList.remove('hidden');
+        })
+        .catch(err => {
+            console.error("Error al acceder a la cámara:", err);
+            alert("No se pudo acceder a la cámara. Asegúrate de haber dado los permisos necesarios.\n\nError: " + err.message);
+        });
+}
+
+function closeCamera() {
+    if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
     }
-});
+    cameraModal.classList.add('hidden');
+}
 
+function takePicture() {
+    const context = cameraCanvas.getContext('2d');
+    cameraCanvas.width = cameraFeed.videoWidth;
+    cameraCanvas.height = cameraFeed.videoHeight;
+    context.drawImage(cameraFeed, 0, 0, cameraCanvas.width, cameraCanvas.height);
+    const dataUrl = cameraCanvas.toDataURL('image/jpeg', 0.9);
+    handleImageData(dataUrl);
+    closeCamera();
+}
+
+function switchCamera() {
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    openCamera();
+}
+
+
+// ... (El resto del código: analyzeImage, displayResults, sharing, etc., no cambia)
 async function analyzeImage(base64ImageData) {
     resetUI();
     resultsContainer.classList.remove('hidden');
@@ -208,16 +264,6 @@ async function analyzeImage(base64ImageData) {
         buttonLoader.classList.add('hidden');
     }
 }
-
-// --- Lógica de la interfaz de usuario ---
-servingsSelector.addEventListener('change', (event) => {
-    if(event.target.name === 'servings') {
-        currentServings = parseInt(event.target.value, 10);
-        if(baseRecipeForOne) {
-            updateDisplayForServings();
-        }
-    }
-});
 
 function updateDisplayForServings() {
     if (!baseRecipeForOne) return;
@@ -294,7 +340,6 @@ function showError(message) {
     resultContent.classList.add('hidden');
 }
 
-// --- Función para la Animación de Confeti ---
 function launchConfetti() {
     const container = document.getElementById('confetti-container');
     if (!container) return;
@@ -320,7 +365,6 @@ function launchConfetti() {
     }
 }
 
-// --- Lógica del Modal Premium ---
 function showPremiumModal() {
     launchConfetti(); 
     premiumModal.classList.remove('hidden');
@@ -332,11 +376,6 @@ function closePremiumModal() {
     setTimeout(() => premiumModal.classList.add('hidden'), 300);
 }
 
-closeModalButton.addEventListener('click', closePremiumModal);
-buyPremiumButton.addEventListener('click', () => { closePremiumModal(); });
-
-
-// --- Lógica para Compartir (Mejorada) ---
 function generateShareableText(platform = 'clipboard') {
     if (!currentRecipeForDisplay) return "Mi receta";
 
@@ -406,8 +445,6 @@ function share(platform) {
     }
 }
 
-
-// --- Lógica de la intro ---
 document.addEventListener('DOMContentLoaded', function() {
     const introOverlay = document.getElementById('intro-overlay');
     
@@ -417,4 +454,15 @@ document.addEventListener('DOMContentLoaded', function() {
             introOverlay.style.display = 'none';
         }, 800);
     }, 3000);
+});
+
+closeModalButton.addEventListener('click', closePremiumModal);
+buyPremiumButton.addEventListener('click', () => { closePremiumModal(); });
+servingsSelector.addEventListener('change', (event) => {
+    if(event.target.name === 'servings') {
+        currentServings = parseInt(event.target.value, 10);
+        if(baseRecipeForOne) {
+            updateDisplayForServings();
+        }
+    }
 });
