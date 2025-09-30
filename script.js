@@ -327,19 +327,29 @@ function simulateAdView() {
 // --- NUEVA FUNCIÓN ---
 // Esta función será llamada por el código de Android cuando el usuario gane la recompensa.
 async function grantAdBonusFromAndroid() {
-    console.log("Recompensa recibida desde Android. Reclamando bono...");
-    
-    await claimAdBonus(); // Llama a tu lógica existente para contactar al backend
-    closePremiumModal();
-    alert("¡Genial! Has desbloqueado un uso de bono.");
-    
-    // Restablecer el botón del modal
-    const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
-    viewAdButton.disabled = false;
-    // Actualizamos el texto del botón dinámicamente con los nuevos contadores
-    adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
-    adButtonLoader.classList.add('hidden');
+    try {
+        console.log("Recompensa recibida desde Android. Reclamando bono...");
+        await claimAdBonus();
+        closePremiumModal();
+        alert("¡Genial! Has desbloqueado un uso de bono.");
+
+        if (viewAdButton) {
+            const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
+            if (adButtonSpan) {
+                adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
+            }
+            viewAdButton.disabled = false;
+        }
+
+        if (adButtonLoader) {
+            adButtonLoader.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error("Error en grantAdBonusFromAndroid:", error);
+        alert("Hubo un problema al procesar tu recompensa.");
+    }
 }
+
 
 
 async function claimAdBonus() {
@@ -669,3 +679,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800);
     }, 3000);
 });
+
