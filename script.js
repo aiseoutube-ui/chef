@@ -81,18 +81,18 @@ let usageStatus = {
 function launchConfetti() {
     const container = document.getElementById('confetti-container');
     if (!container) return;
-    container.innerHTML = '';
+    container.innerHTML = ''; 
     const confettiCount = 150;
     const colors = ['#667eea', '#764ba2', '#f472b6', '#34d399', '#f59e0b', '#ef4444'];
     for (let i = 0; i < confettiCount; i++) {
         const confetti = document.createElement('div');
         confetti.classList.add('confetti');
-        const size = Math.random() * 8 + 4;
+        const size = Math.random() * 8 + 4; 
         confetti.style.width = `${size}px`;
         confetti.style.height = `${size * 2}px`;
         confetti.style.left = `${Math.random() * 100}vw`;
         confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        const duration = Math.random() * 3 + 4;
+        const duration = Math.random() * 3 + 4; 
         const delay = Math.random() * 2;
         confetti.style.animation = `fall ${duration}s linear ${delay}s forwards`;
         container.appendChild(confetti);
@@ -105,8 +105,6 @@ function closePremiumModal() {
     if (countdownInterval) clearInterval(countdownInterval);
 }
 
-// --- VERSIÓN MODIFICADA PARA DEPURACIÓN ---
-// Esta función siempre mostrará el botón de "Ver anuncio".
 function showPremiumModal(isCooldown) {
     const modalTitle = document.getElementById('modal-title');
     const modalCooldownInfo = document.getElementById('modal-cooldown-info');
@@ -125,18 +123,9 @@ function showPremiumModal(isCooldown) {
         if (countdownInterval) clearInterval(countdownInterval);
     }
 
+    viewAdButton.disabled = remainingAdsClaimable <= 0;
     modalAdCounter.textContent = `${adCount}/${adBonusLimit}`;
-
-    // --- MODIFICACIÓN TEMPORAL PARA DEPURAR ---
-    // Hemos comentado las líneas originales que ocultan o desactivan el botón.
-    // viewAdButton.disabled = remainingAdsClaimable <= 0;
-    // viewAdButton.style.display = remainingAdsClaimable > 0 ? 'flex' : 'none';
-
-    // Con estas nuevas líneas, forzamos el botón a estar SIEMPRE visible y activo.
-    console.log("MODO DEPURACIÓN: Forzando la visibilidad del botón de anuncio.");
-    viewAdButton.disabled = false;
-    viewAdButton.style.display = 'flex';
-    // --- FIN DE LA MODIFICACIÓN ---
+    viewAdButton.style.display = remainingAdsClaimable > 0 ? 'flex' : 'none';
 
     launchConfetti(); 
     premiumModal.classList.remove('hidden');
@@ -148,7 +137,7 @@ function showPremiumModal(isCooldown) {
 window.onload = async function() {
     getLocation();
     userFingerprint = await getFingerprint();
-    await getAnalysisStatus();
+    await getAnalysisStatus(); 
 
     analyzeButton.disabled = true;
     copyButton.addEventListener('click', copyToClipboard);
@@ -191,7 +180,7 @@ async function getFingerprint() {
         return result.visitorId;
     } catch (error) {
         console.error("Error al generar fingerprint:", error);
-        return 'temp_user_' + Date.now();
+        return 'temp_user_' + Date.now(); 
     }
 }
 
@@ -239,7 +228,7 @@ function updateDisplayAndControls() {
     if (lastAnalysisTimestamp !== 0 && timeSinceLast < COOLDOWN_MS) {
         isCooldownActive = true;
         const nextFreeTime = lastAnalysisTimestamp + COOLDOWN_MS;
-        startCooldownTimer(nextFreeTime, cooldownTimer);
+        startCooldownTimer(nextFreeTime, cooldownTimer); 
     } else {
         cooldownTimer.textContent = 'Listo';
     }
@@ -273,7 +262,7 @@ function updateDisplayAndControls() {
     if (shouldShowPrompt && !cooldownAdPrompt.classList.contains('prompt-visible')) {
         cooldownAdPrompt.classList.remove('hidden', 'prompt-hidden');
         cooldownAdPrompt.classList.add('prompt-visible');
-    }
+    } 
     else if (!shouldShowPrompt && cooldownAdPrompt.classList.contains('prompt-visible')) {
         cooldownAdPrompt.classList.remove('prompt-visible');
         cooldownAdPrompt.classList.add('prompt-hidden');
@@ -307,10 +296,11 @@ function startCooldownTimer(targetTimestamp, element) {
 
 // --- Lógica de Anuncios ---
 
+// --- MODIFICADO ---
+// Esta función ahora llama al código nativo de Android.
 function simulateAdView() {
     const { adCount, adBonusLimit } = usageStatus;
     if (adCount >= adBonusLimit) {
-        // Esta comprobación se salta con el "modo depuración", pero la dejamos por si acaso.
         alert("Ya has reclamado todos los bonos por anuncio de hoy.");
         return;
     }
@@ -333,6 +323,8 @@ function simulateAdView() {
     }
 }
 
+
+// --- NUEVA FUNCIÓN ---
 // Esta función será llamada por el código de Android cuando el usuario gane la recompensa.
 async function grantAdBonusFromAndroid() {
     console.log("Recompensa recibida desde Android. Reclamando bono...");
@@ -365,7 +357,7 @@ async function claimAdBonus() {
         const result = await response.json();
         if (result.success && result.status) {
             usageStatus = result.status;
-            updateDisplayAndControls();
+            updateDisplayAndControls(); 
         } else {
             console.error("Error al reclamar el bono:", result.message);
             alert("Error: No se pudo registrar el bono. " + result.message);
@@ -383,7 +375,7 @@ analyzeButton.addEventListener('click', () => {
     if (remainingFree <= 0 && !isBonusActive) {
         const isCooldown = (Date.now() - usageStatus.lastAnalysisTimestamp) < COOLDOWN_MS;
         showPremiumModal(isCooldown);
-        return;
+        return; 
     }
     
     if (imageBase64) {
@@ -538,7 +530,7 @@ servingsSelector.addEventListener('change', (event) => {
 function updateDisplayForServings() {
     if (!baseRecipeForOne) return;
 
-    const scaledRecipe = JSON.parse(JSON.stringify(baseRecipeForOne));
+    const scaledRecipe = JSON.parse(JSON.stringify(baseRecipeForOne)); 
     scaledRecipe.ingredients.forEach(ing => {
         ing.quantity *= currentServings;
         if (ing.estimatedLocalPrice) {
@@ -551,7 +543,7 @@ function updateDisplayForServings() {
 }
 
 function displayResults(data) {
-    loader.classList.add('hidden');
+    loader.classList.add('hidden'); 
 
     let totalCost = 0;
     const currency = data.currencyCode || 'USD';
@@ -660,7 +652,7 @@ function share(platform) {
             break;
         case 'email':
             const subject = encodeURIComponent(`Receta para ${currentRecipeForDisplay.dishName}`);
-            const emailBody = encodeURIComponent(generateShareeableText('email'));
+            const emailBody = encodeURIComponent(generateShareableText('email'));
             url = `mailto:?subject=${subject}&body=${emailBody}`;
             window.location.href = url;
             break;
