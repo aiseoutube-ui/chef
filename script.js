@@ -169,6 +169,11 @@ window.onload = async function() {
     });
     
     document.getElementById('buy-premium-button').addEventListener('click', closePremiumModal);
+
+    // NUEVO CÓDIGO: El listener para el botón de prueba
+    document.getElementById('test-ad-button').addEventListener('click', () => {
+        simulateAdView();
+    });
 };
 
 // --- Lógica de Estado y Control ---
@@ -682,5 +687,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800);
     }, 3000);
 });
-
 
