@@ -255,8 +255,6 @@ function updateDisplayAndControls() {
     }
 
     // 5. Lógica del prompt de anuncio
-    // --- CAMBIO CLAVE ---
-    // La ventana amarilla ahora aparece si estás en cooldown O si te quedaste sin usos gratis.
     const isBlockedFromFreeUse = isCooldownActive || remainingFree <= 0;
     const canGetBonus = remainingAdsClaimable > 0 && !isBonusActive;
     const shouldShowPrompt = isBlockedFromFreeUse && canGetBonus;
@@ -298,44 +296,51 @@ function startCooldownTimer(targetTimestamp, element) {
 
 // --- Lógica de Anuncios ---
 
+// --- MODIFICADO ---
+// Esta función ahora llama al código nativo de Android.
 function simulateAdView() {
-    const { adCount, adBonusLimit, lastAnalysisTimestamp } = usageStatus;
-    const remainingAdsClaimable = adBonusLimit - adCount;
-
-    if (remainingAdsClaimable <= 0) {
+    const { adCount, adBonusLimit } = usageStatus;
+    if (adCount >= adBonusLimit) {
         alert("Ya has reclamado todos los bonos por anuncio de hoy.");
-        return;
-    }
-    
-    const now = Date.now();
-    const timeSinceLast = now - lastAnalysisTimestamp;
-    
-    if (lastAnalysisTimestamp !== 0 && timeSinceLast < AD_COOLDOWN_MS) {
-        const nextAdTime = lastAnalysisTimestamp + AD_COOLDOWN_MS;
-        const diff = nextAdTime - now;
-        const minutes = Math.ceil(diff / (1000 * 60));
-        alert(`Debes esperar ${minutes} minutos antes de ver otro anuncio.`); 
         return;
     }
 
     viewAdButton.disabled = true;
     const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
-    const originalText = adButtonSpan.textContent;
     adButtonSpan.textContent = "Cargando anuncio...";
     adButtonLoader.classList.remove('hidden');
 
-    setTimeout(async () => {
-        adButtonSpan.textContent = "¡Anuncio completado! Reclamando bono...";
-        await claimAdBonus();
-        closePremiumModal();
-        alert("¡Genial! Has desbloqueado un uso de bono.");
-        
-        viewAdButton.disabled = false;
-        adButtonSpan.textContent = originalText;
-        adButtonLoader.classList.add('hidden');
-
-    }, 3000);
+    // Comprueba si la interfaz nativa de Android ("el puente") está disponible
+    if (window.Android && typeof window.Android.showRewardedAd === 'function') {
+        // Llama a la función nativa en tu app de Android
+        window.Android.showRewardedAd();
+    } else {
+        // Esto se ejecutará si abres la página en un navegador de PC (para pruebas)
+        console.log("Interfaz nativa 'Android' no encontrada. Simulando anuncio para pruebas...");
+        setTimeout(() => {
+            grantAdBonusFromAndroid(); // Llama a la función de recompensa directamente
+        }, 3000);
+    }
 }
+
+
+// --- NUEVA FUNCIÓN ---
+// Esta función será llamada por el código de Android cuando el usuario gane la recompensa.
+async function grantAdBonusFromAndroid() {
+    console.log("Recompensa recibida desde Android. Reclamando bono...");
+    
+    await claimAdBonus(); // Llama a tu lógica existente para contactar al backend
+    closePremiumModal();
+    alert("¡Genial! Has desbloqueado un uso de bono.");
+    
+    // Restablecer el botón del modal
+    const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
+    viewAdButton.disabled = false;
+    // Actualizamos el texto del botón dinámicamente con los nuevos contadores
+    adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
+    adButtonLoader.classList.add('hidden');
+}
+
 
 async function claimAdBonus() {
     try {
@@ -367,14 +372,12 @@ analyzeButton.addEventListener('click', () => {
     const { freeCount, freeLimit, isBonusActive } = usageStatus;
     const remainingFree = freeLimit - freeCount;
 
-    // Si no quedan usos gratis y no hay un bono activo, su función es abrir el modal.
     if (remainingFree <= 0 && !isBonusActive) {
         const isCooldown = (Date.now() - usageStatus.lastAnalysisTimestamp) < COOLDOWN_MS;
         showPremiumModal(isCooldown);
         return; 
     }
     
-    // Si la condición de arriba no se cumple, procede con el análisis normal.
     if (imageBase64) {
         analyzeImage(imageBase64);
     } else {
