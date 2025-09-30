@@ -329,7 +329,9 @@ function simulateAdView() {
 async function grantAdBonusFromAndroid() {
     try {
         console.log("Recompensa recibida desde Android. Reclamando bono...");
-        await claimAdBonus();
+
+        await claimAdBonus(); // ← si esto falla, lo atrapamos
+
         closePremiumModal();
         alert("¡Genial! Has desbloqueado un uso de bono.");
 
@@ -349,6 +351,7 @@ async function grantAdBonusFromAndroid() {
         alert("Hubo un problema al procesar tu recompensa.");
     }
 }
+
 
 
 
@@ -679,4 +682,5 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800);
     }, 3000);
 });
+
 
