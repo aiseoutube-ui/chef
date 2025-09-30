@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CusiCusa - Recetas Deliciosas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="cusicusa_style.css?v=1.0">
+</head>
+<body class="text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div id="intro-overlay" class="intro-overlay">
+        <img src="https://yt3.googleusercontent.com/UpzZjCNpkV7xb49ViYY2hDoTcyjf8Jo8NUBftU8qKgELba-leKetstmtqGTnwnk6KNUzK61PJg=s160-c-k-c0x00ffffff-no-rj" alt="CusiCusa Logo" class="intro-logo">
+        <h1 class="intro-text">CusiCusa</h1>
+        <p class="intro-subtitle">Descubre sabores únicos</p>
+    </div>
+
+    <main class="app-container rounded-2xl w-full max-w-2xl">
+        <div class="app-header">
+            <img src="https://yt3.googleusercontent.com/UpzZjCNpkV7xb49ViYY2hDoTcyjf8Jo8NUBftU8qKgELba-leKetstmtqGTnwnk6KNUzK61PJg=s160-c-k-c0x00ffffff-no-rj" alt="CusiCusa Logo" class="app-logo">
+            <h1 class="app-title">CusiCusa</h1>
+            <p class="app-subtitle">Sube una foto y obtén la receta, costo local y tiendas cercanas.</p>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            <div id="location-status" class="location-status">
+                Obteniendo tu ubicación para personalizar los resultados...
+            </div>
+            
+            <div class="text-center mb-6 p-4 rounded-xl bg-purple-50 border border-purple-200">
+                <p class="font-bold text-sm text-purple-700 mb-2" id="counter-free-display">
+                    Análisis disponibles: 3 / 3 gratis hoy
+                </p>
+                <div class="flex justify-center items-center text-sm text-gray-600 space-x-4">
+                    <span class="font-medium flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-purple-500"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" /></svg>
+                        Próximo análisis en: <span class="font-semibold text-purple-600" id="cooldown-timer">Listo</span>
+                    </span>
+                    <span class="font-medium flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-500"><path d="M11.472 3.497a.75.75 0 011.056 0l3.879 3.88c.632.631 1.056 1.488 1.056 2.392v4.356c0 .903-.424 1.76-1.056 2.392l-3.879 3.88a.75.75 0 01-1.056 0l-3.879-3.88c-.632-.631-1.056-1.488-1.056-2.392V9.769c0-.903.424-1.76 1.056-2.392l3.879-3.88z" /></svg>
+                        Bonos por anuncio usados: <span class="font-semibold text-yellow-600" id="ads-used-counter">0/2</span>
+                    </span>
+                </div>
+            </div>
+            <div class="space-y-6">
+                
+                <div id="upload-options-container" class="space-y-4">
+                    <div class="text-center text-gray-600">
+                        <p class="font-semibold text-lg">Empieza por una imagen de tu plato</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <button id="take-photo-button" class="upload-button flex-1">
+                            <svg class="w-8 h-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
+                            Tomar Foto
+                        </button>
+                        <label for="file-input" class="upload-button flex-1">
+                            <svg class="w-8 h-8 mx-auto mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" /></svg>
+                            Subir Archivo
+                        </label>
+                    </div>
+                    <input id="file-input" type="file" accept="image/*" class="hidden">
+                </div>
+                
+                <div id="image-preview-container" class="relative hidden">
+                    <img id="image-preview" class="rounded-lg w-full h-auto max-h-72 object-contain" alt="Vista previa de la imagen">
+                    <button id="change-photo-button" class="absolute top-2 right-2 bg-black bg-opacity-50 text-white rounded-full p-2 hover:bg-opacity-75">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.667 0l3.181-3.183m-4.991-2.691V5.25a3.375 3.375 0 013.375-3.375h.008a3.375 3.375 0 013.375 3.375v.008a3.375 3.375 0 01-3.375 3.375h-4.992z" /></svg>
+                    </button>
+                </div>
+                
+                <button id="analyze-button" class="analyze-button flex items-center justify-center h-[60px]">
+                    <span id="button-text">Analizar Plato y Calcular Costo</span>
+                    <div id="button-loader" class="button-loader hidden"></div>
+                </button>
+            </div>
+
+            <div id="results-container" class="results-container mt-8 hidden">
+                <div class="result-section">
+                    <h3 class="text-xl font-semibold mb-4 text-center color-gray-800">Número de Personas</h3>
+                    <div id="servings-selector" class="servings-selector flex justify-center gap-4">
+                        <div>
+                            <input type="radio" id="servings1" name="servings" value="1" checked>
+                            <label for="servings1">1 Persona</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="servings2" name="servings" value="2">
+                            <label for="servings2">2 Personas</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="servings4" name="servings" value="4">
+                            <label for="servings4">4 Personas</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="loader" class="flex justify-center items-center py-8 hidden">
+                    <div class="loader"></div>
+                    <p class="ml-4 text-gray-600 font-medium">Analizando y calculando... Esto puede tardar un momento.</p>
+                </div>
+
+                <div id="result-content" class="hidden space-y-6">
+                    <h2 id="dish-name" class="dish-name text-3xl font-bold text-center"></h2>
+                    
+                    <div class="result-section">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">🛒 Carrito y Costo Estimado</h3>
+                        <div id="cart-section" class="space-y-4">
+                             <div>
+                                <h4 class="font-semibold text-gray-800 mb-3">Ingredientes a Comprar:</h4>
+                                <ul id="cart-list" class="space-y-2"></ul>
+                            </div>
+                            <div class="total-cost-container">
+                                <div class="text-lg text-gray-700 mb-1">Costo Total Estimado:</div>
+                                <div class="text-3xl font-bold text-gray-900">
+                                    <span id="total-cost" class="text-purple-600"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="supermarket-section" class="result-section hidden">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">🏪 Tiendas Recomendadas</h3>
+                        <ul id="supermarket-list" class="list-disc list-inside space-y-2 text-gray-700"></ul>
+                    </div>
+
+                    <div class="result-section">
+                        <h3 class="text-xl font-semibold mb-3 text-gray-800">📝 Instrucciones de Preparación:</h3>
+                        <ol id="instruction-list" class="list-decimal list-inside space-y-3 text-gray-700"></ol>
+                    </div>
+                    
+                    <div id="share-buttons" class="flex flex-col sm:flex-row gap-3 hidden">
+    
+                        <button id="copy-button" class="share-button copy-button flex items-center justify-center gap-2 flex-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                            <span>Copiar</span>
+                        </button>
+                    
+                        <button onclick="share('whatsapp')" class="share-button flex items-center justify-center gap-2 flex-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.894 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zM6.597 20.193c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.886-.003 2.011.564 3.965 1.634 5.675l-1.109 4.069 4.212-1.106z"/></svg>
+                            <span>WhatsApp</span>
+                        </button>
+
+                        <button onclick="share('email')" class="share-button email flex items-center justify-center gap-2 flex-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25-2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" /></svg>
+                            <span>Email</span>
+                        </button>
+                    
+                    </div>
+                </div>
+
+                <div id="error-message" class="error-message hidden text-center p-4 rounded-lg"></div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <p class="text-xs text-gray-400">CusiCusa v1.3.1 - Powered by IA</p>
+            </div>
+        </div>
+
+        <div id="cooldown-ad-prompt" class="fixed bottom-5 right-5 w-auto max-w-sm p-4 rounded-xl shadow-2xl bg-white border border-gray-200 flex items-center gap-4 hidden">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 text-yellow-500">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+            </div>
+            <div>
+                <h4 class="font-bold text-gray-800">¿No quieres esperar?</h4>
+                <p class="text-sm text-gray-600">Obtén un análisis extra ahora viendo un anuncio.</p>
+            </div>
+            <button id="prompt-close-button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+
+    </main>
+
+    <div id="premium-modal" class="modal-overlay hidden">
+        <div id="confetti-container"></div>
+        <div class="modal-content">
+            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-3">Se acabaron tus análisis gratis de hoy 🎯</h3>
+            <p id="modal-cooldown-info" class="text-sm text-gray-500 mt-4 mb-4">
+                También puedes esperar <span class="font-bold" id="modal-cooldown-timer-text"></span> para tu siguiente análisis gratis.
+            </p>
+            
+            <div id="modal-options" class="flex flex-col gap-4 mt-6">
+                <button id="view-ad-button" class="analyze-button flex items-center justify-center gap-2 py-3 px-6 bg-yellow-500 hover:bg-yellow-600">
+                    <span id="ad-button-text">Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">0/2</span>)</span>
+                    <div id="ad-button-loader" class="button-loader hidden"></div>
+                </button>
+                <a href="TU_LINK_DE_GOOGLE_PLAY_AQUI" id="buy-premium-button" class="analyze-button flex-1 py-3 px-6 bg-purple-600 hover:bg-purple-700" target="_blank">
+                    Hazte Premium — Ilimitado y sin anuncios
+                </a>
+            </div>
+
+            <button id="close-modal-button" class="mt-4 text-sm text-gray-500 hover:text-gray-700">
+                Esperar y Cerrar
+            </button>
+        </div>
+    </div>
+    <div id="camera-modal" class="camera-modal hidden">
+        <video id="camera-feed" class="camera-feed" playsinline></video>
+        <canvas id="camera-canvas" class="hidden"></canvas>
+        <div class="camera-controls">
+            <button id="close-camera-button" class="camera-control">Cancelar</button>
+            <button id="capture-button" class="capture-button"></button>
+            <button id="switch-camera-button" class="camera-control">Girar</button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@4/dist/fp.umd.min.js"></script>
+    <script src="script.js?v=1.0"></script>
+</body>
+</html>
