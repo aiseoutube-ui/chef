@@ -33,7 +33,6 @@ const viewAdButton = document.getElementById('view-ad-button');
 const adButtonLoader = document.getElementById('ad-button-loader');
 const modalAdCounter = document.getElementById('modal-ad-counter');
 const modalCooldownTimerText = document.getElementById('modal-cooldown-timer-text');
-// ========== NUEVA REFERENCIA AL BOTÓN DE BONOS ==========
 const bonusButton = document.getElementById('bonus-button');
 
 
@@ -156,9 +155,10 @@ window.onload = async function() {
     viewAdButton.addEventListener('click', simulateAdView);
     closeModalButton.addEventListener('click', closePremiumModal);
     
-    // ========== NUEVO EVENTO PARA EL BOTÓN DE BONOS ==========
     bonusButton.addEventListener('click', () => {
-        showPremiumModal(true); // Llama directamente al modal
+        // El modal debe saber si se abrió por cooldown o por límite
+        const isTriggeredByCooldown = (Date.now() - usageStatus.lastAnalysisTimestamp) < COOLDOWN_MS;
+        showPremiumModal(isTriggeredByCooldown);
     });
     
     document.getElementById('buy-premium-button').addEventListener('click', closePremiumModal);
@@ -239,9 +239,12 @@ function updateDisplayAndControls() {
         buttonText.textContent = 'Límite diario alcanzado';
     }
     
-    // ========== LÓGICA DE VISIBILIDAD DEL NUEVO BOTÓN "BONUS" ==========
-    const shouldShowBonusButton = isCooldownActive && remainingAdsClaimable > 0;
-    if (shouldShowBonusButton) {
+    // ========== LÓGICA FINAL Y CORREGIDA PARA EL BOTÓN "BONUS" ==========
+    const isBlockedByTime = isCooldownActive;
+    const isBlockedByLimit = remainingFree <= 0 && !isBonusActive;
+    const canGetBonus = remainingAdsClaimable > 0;
+
+    if ((isBlockedByTime || isBlockedByLimit) && canGetBonus) {
         bonusButton.classList.remove('hidden');
     } else {
         bonusButton.classList.add('hidden');
@@ -295,7 +298,7 @@ async function grantAdBonusFromAndroid() {
     closePremiumModal();
 
     if (viewAdButton) {
-        const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
+        const adButtonSpan = viewAd_button.querySelector('#ad-button-text');
         if (adButtonSpan) {
             adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
         }
@@ -332,8 +335,6 @@ async function claimAdBonus() {
 
 // --- Lógica Principal de Análisis ---
 analyzeButton.addEventListener('click', () => {
-    // La lógica de deshabilitación del botón ahora previene clics innecesarios,
-    // pero si se llega aquí, se procede al análisis.
     if (imageBase64) {
         analyzeImage(imageBase64);
     } else {
@@ -343,7 +344,7 @@ analyzeButton.addEventListener('click', () => {
 
 
 async function analyzeImage(base64ImageData) {
-    resetUI(); // Limpia la UI de resultados anteriores
+    resetUI(); 
     resultsContainer.classList.remove('hidden');
     
     analyzeButton.disabled = true;
@@ -368,16 +369,12 @@ async function analyzeImage(base64ImageData) {
 
         const result = await response.json();
 
-        // El backend ahora maneja todos los casos de uso (éxito, cooldown, límite)
-        // así que el frontend solo necesita reaccionar al estado final.
         if (result.success) {
             baseRecipeForOne = result.data;
             usageStatus = result.status;
             updateDisplayForServings();
             updateDisplayAndControls();
         } else {
-            // Si hay un error (cooldown, límite, etc.), el backend devuelve el estado actualizado.
-            // Lo usamos para mostrar el modal correcto.
             usageStatus = result.status;
             updateDisplayAndControls();
             if(result.message === 'cooldown_active'){
@@ -607,7 +604,7 @@ function share(platform) {
             break;
         case 'email':
             const subject = encodeURIComponent(`Receta para ${currentRecipeForDisplay.dishName}`);
-            const emailBody = encodeURIComponent(generateSharebaleText('email'));
+            const emailBody = encodeURIComponent(generateShareableText('email'));
             url = `mailto:?subject=${subject}&body=${emailBody}`;
             window.location.href = url;
             break;
