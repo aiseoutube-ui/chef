@@ -52,7 +52,7 @@ const switchCameraButton = document.getElementById('switch-camera-button');
 
 // --- Constantes ---
 const COOLDOWN_MS = 15 * 60 * 1000; // 15 minutos para análisis
-const AD_COOLDOWN_MS = 1; // Cooldown de prueba para ver anuncios
+const AD_COOLDOWN_MS = 1; // Cooldown de prueba para ver anuncioss
 
 // --- Estado de la Aplicación ---
 let baseRecipeForOne = null;
