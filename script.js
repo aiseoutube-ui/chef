@@ -33,11 +33,11 @@ const viewAdButton = document.getElementById('view-ad-button');
 const adButtonLoader = document.getElementById('ad-button-loader');
 const modalAdCounter = document.getElementById('modal-ad-counter');
 const modalCooldownTimerText = document.getElementById('modal-cooldown-timer-text');
+// ========== NUEVA REFERENCIA AL BOTÓN DE BONOS ==========
+const bonusButton = document.getElementById('bonus-button');
 
-// Referencias para el nuevo prompt de cooldown
-const cooldownAdPrompt = document.getElementById('cooldown-ad-prompt');
-const promptCloseButton = document.getElementById('prompt-close-button');
 
+// --- Referencias para la cámara ---
 const copyButton = document.getElementById('copy-button');
 const takePhotoButton = document.getElementById('take-photo-button');
 const uploadOptionsContainer = document.getElementById('upload-options-container');
@@ -52,7 +52,6 @@ const switchCameraButton = document.getElementById('switch-camera-button');
 
 // --- Constantes ---
 const COOLDOWN_MS = 15 * 60 * 1000; // 15 minutos para análisis
-const AD_COOLDOWN_MS = 1; // Cooldown de prueba para ver anuncioss
 
 // --- Estado de la Aplicación ---
 let baseRecipeForOne = null;
@@ -112,8 +111,8 @@ function showPremiumModal(isCooldown) {
     const remainingAdsClaimable = adBonusLimit - adCount;
 
     if (isCooldown) {
-        modalTitle.textContent = "¡Espera un momento! ⏳";
-        modalCooldownInfo.innerHTML = "También puedes esperar <span class=\"font-bold\" id=\"modal-cooldown-timer-text\">15 minutos</span> para tu siguiente análisis gratis (hasta 3 al día).";
+        modalTitle.textContent = "¡Salta la espera! ⏳";
+        modalCooldownInfo.innerHTML = "Usa un bono para analizar ahora, o espera <span class=\"font-bold\" id=\"modal-cooldown-timer-text\">15 minutos</span> para tu siguiente análisis gratis.";
         
         const nextAnalysisTime = lastAnalysisTimestamp + COOLDOWN_MS;
         startCooldownTimer(nextAnalysisTime, modalCooldownTimerText);
@@ -157,18 +156,9 @@ window.onload = async function() {
     viewAdButton.addEventListener('click', simulateAdView);
     closeModalButton.addEventListener('click', closePremiumModal);
     
-    // Listeners para el nuevo prompt de cooldown
-    cooldownAdPrompt.addEventListener('click', (e) => {
-        if (e.target.closest('#prompt-close-button')) return;
-        // --- ARREGLADO: El prompt amarillo ahora se oculta al hacer clic en él.
-        cooldownAdPrompt.classList.remove('prompt-visible');
-        cooldownAdPrompt.classList.add('prompt-hidden');
-        showPremiumModal(true);
-    });
-
-    promptCloseButton.addEventListener('click', () => {
-        cooldownAdPrompt.classList.remove('prompt-visible');
-        cooldownAdPrompt.classList.add('prompt-hidden');
+    // ========== NUEVO EVENTO PARA EL BOTÓN DE BONOS ==========
+    bonusButton.addEventListener('click', () => {
+        showPremiumModal(true); // Llama directamente al modal
     });
     
     document.getElementById('buy-premium-button').addEventListener('click', closePremiumModal);
@@ -202,12 +192,10 @@ async function getAnalysisStatus() {
         const result = await response.json();
         if (result.success && result.status) {
             usageStatus = result.status;
-        } else {
-            // Se eliminó el mensaje de consola
         }
         updateDisplayAndControls();
     } catch (e) {
-        // Se eliminó el mensaje de consola
+        // error
     }
 }
 
@@ -227,7 +215,6 @@ function updateDisplayAndControls() {
     const timeSinceLast = now - lastAnalysisTimestamp;
     
     let isCooldownActive = false;
-    // --- ARREGLADO: El cooldown visual solo se activa si NO hay un bono disponible.
     if (lastAnalysisTimestamp !== 0 && timeSinceLast < COOLDOWN_MS && !isBonusActive) {
         isCooldownActive = true;
         const nextFreeTime = lastAnalysisTimestamp + COOLDOWN_MS;
@@ -239,37 +226,25 @@ function updateDisplayAndControls() {
     
     // 3. Habilitar/Deshabilitar Botón principal (ANALIZAR)
     const hasFreeOrBonusUses = remainingFree > 0 || isBonusActive;
-    const canWatchAdForUse = remainingFree <= 0 && !isBonusActive && remainingAdsClaimable > 0;
-    
-    const canPerformAction = (hasFreeOrBonusUses && !isCooldownActive) || canWatchAdForUse;
-    
-    analyzeButton.disabled = !imageBase64 || !canPerformAction;
+    analyzeButton.disabled = !imageBase64 || !hasFreeOrBonusUses || isCooldownActive;
 
     // 4. Lógica del texto del botón
     if (isCooldownActive) {
-        buttonText.textContent = `En espera. Siguiente análisis en...`;
-    } else if (remainingFree > 0) {
-        buttonText.textContent = 'Analizar Plato y Calcular Costo';
+        buttonText.textContent = `En espera...`;
     } else if (isBonusActive) {
         buttonText.textContent = 'Analizar (Usando Bono)';
-    } else if (remainingAdsClaimable > 0) {
-        buttonText.textContent = 'Ver anuncio para desbloquear análisis';
+    } else if (hasFreeOrBonusUses) {
+        buttonText.textContent = 'Analizar Plato y Calcular Costo';
     } else {
         buttonText.textContent = 'Límite diario alcanzado';
     }
-
-    // 5. Lógica del prompt de anuncio
-    const isBlockedFromFreeUse = isCooldownActive || remainingFree <= 0;
-    const canGetBonus = remainingAdsClaimable > 0 && !isBonusActive;
-    const shouldShowPrompt = isBlockedFromFreeUse && canGetBonus;
-
-    if (shouldShowPrompt && !cooldownAdPrompt.classList.contains('prompt-visible')) {
-        cooldownAdPrompt.classList.remove('hidden', 'prompt-hidden');
-        cooldownAdPrompt.classList.add('prompt-visible');
-    } 
-    else if (!shouldShowPrompt && cooldownAdPrompt.classList.contains('prompt-visible')) {
-        cooldownAdPrompt.classList.remove('prompt-visible');
-        cooldownAdPrompt.classList.add('prompt-hidden');
+    
+    // ========== LÓGICA DE VISIBILIDAD DEL NUEVO BOTÓN "BONUS" ==========
+    const shouldShowBonusButton = isCooldownActive && remainingAdsClaimable > 0;
+    if (shouldShowBonusButton) {
+        bonusButton.classList.remove('hidden');
+    } else {
+        bonusButton.classList.add('hidden');
     }
 }
 
@@ -300,34 +275,24 @@ function startCooldownTimer(targetTimestamp, element) {
 
 // --- Lógica de Anuncios ---
 
-// --- MODIFICADO: Se eliminó la lógica de carga y las alertas ---
 function simulateAdView() {
     const { adCount, adBonusLimit } = usageStatus;
-    if (adCount >= adBonusLimit) {
-        // Se eliminó la alerta. La interfaz de usuario ya debería manejar esto.
-        return;
-    }
+    if (adCount >= adBonusLimit) return;
 
     viewAdButton.disabled = true;
     const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
     adButtonSpan.textContent = "Cargando anuncio...";
     adButtonLoader.classList.remove('hidden');
 
-    // Llama al código nativo de Android
     if (window.Android && typeof window.Android.showRewardedAd === 'function') {
         window.Android.showRewardedAd();
-    } else {
-        // Lógica de prueba eliminada, ya que el sistema real funciona.
     }
 }
 
 
-// --- NUEVA FUNCIÓN: Se eliminaron los mensajes de consola y las alertas ---
 async function grantAdBonusFromAndroid() {
     await claimAdBonus();
-
     closePremiumModal();
-    // Se eliminó la alerta. La recompensa se mostrará en la interfaz.
 
     if (viewAdButton) {
         const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
@@ -359,25 +324,16 @@ async function claimAdBonus() {
         if (result.success && result.status) {
             usageStatus = result.status;
             updateDisplayAndControls(); 
-        } else {
-            // Se eliminó el mensaje de consola y la alerta
         }
     } catch (e) {
-        // Se eliminó el mensaje de consola
+        // error
     }
 }
 
 // --- Lógica Principal de Análisis ---
 analyzeButton.addEventListener('click', () => {
-    const { freeCount, freeLimit, isBonusActive } = usageStatus;
-    const remainingFree = freeLimit - freeCount;
-
-    if (remainingFree <= 0 && !isBonusActive) {
-        const isCooldown = (Date.now() - usageStatus.lastAnalysisTimestamp) < COOLDOWN_MS;
-        showPremiumModal(isCooldown);
-        return; 
-    }
-    
+    // La lógica de deshabilitación del botón ahora previene clics innecesarios,
+    // pero si se llega aquí, se procede al análisis.
     if (imageBase64) {
         analyzeImage(imageBase64);
     } else {
@@ -387,7 +343,7 @@ analyzeButton.addEventListener('click', () => {
 
 
 async function analyzeImage(base64ImageData) {
-    resetUI();
+    resetUI(); // Limpia la UI de resultados anteriores
     resultsContainer.classList.remove('hidden');
     
     analyzeButton.disabled = true;
@@ -412,21 +368,23 @@ async function analyzeImage(base64ImageData) {
 
         const result = await response.json();
 
+        // El backend ahora maneja todos los casos de uso (éxito, cooldown, límite)
+        // así que el frontend solo necesita reaccionar al estado final.
         if (result.success) {
             baseRecipeForOne = result.data;
             usageStatus = result.status;
             updateDisplayForServings();
             updateDisplayAndControls();
-        } else if (result.message === 'limit_reached') {
-            usageStatus = result.status;
-            updateDisplayAndControls();
-            showPremiumModal(false);
-        } else if (result.message === 'cooldown_active') {
-            usageStatus = result.status;
-            updateDisplayAndControls();
-            showPremiumModal(true);
         } else {
-            throw new Error(result.message);
+            // Si hay un error (cooldown, límite, etc.), el backend devuelve el estado actualizado.
+            // Lo usamos para mostrar el modal correcto.
+            usageStatus = result.status;
+            updateDisplayAndControls();
+            if(result.message === 'cooldown_active'){
+                showPremiumModal(true);
+            } else {
+                showPremiumModal(false);
+            }
         }
 
     } catch (error) {
@@ -649,7 +607,7 @@ function share(platform) {
             break;
         case 'email':
             const subject = encodeURIComponent(`Receta para ${currentRecipeForDisplay.dishName}`);
-            const emailBody = encodeURIComponent(generateShareableText('email'));
+            const emailBody = encodeURIComponent(generateSharebaleText('email'));
             url = `mailto:?subject=${subject}&body=${emailBody}`;
             window.location.href = url;
             break;

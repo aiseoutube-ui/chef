@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
 
     <title>CusiCusa - Recetas Deliciosas</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -37,9 +37,10 @@
                     Análisis disponibles: 3 / 3 gratis hoy
                 </p>
                 <div class="flex justify-center items-center text-sm text-gray-600 space-x-4">
-                    <span class="font-medium flex items-center gap-1">
+                    <span class="font-medium flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-purple-500"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z" clip-rule="evenodd" /></svg>
                         Próximo análisis en: <span class="font-semibold text-purple-600" id="cooldown-timer">Listo</span>
+                        <button id="bonus-button" class="hidden ml-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-1 px-3 rounded-full text-xs transition-transform transform hover:scale-105">Usar Bono</button>
                     </span>
                     <span class="font-medium flex items-center gap-1">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-yellow-500"><path d="M11.472 3.497a.75.75 0 011.056 0l3.879 3.88c.632.631 1.056 1.488 1.056 2.392v4.356c0 .903-.424 1.76-1.056 2.392l-3.879 3.88a.75.75 0 01-1.056 0l-3.879-3.88c-.632-.631-1.056-1.488-1.056-2.392V9.769c0-.903.424-1.76 1.056-2.392l3.879-3.88z" /></svg>
@@ -160,26 +161,7 @@
             </div>
         </div>
 
-        <div id="cooldown-ad-prompt" class="fixed bottom-5 right-5 w-auto max-w-sm p-4 rounded-xl shadow-2xl bg-white border border-gray-200 flex items-center gap-4 hidden">
-            <div class="flex-shrink-0">
-                <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-7 h-7 text-yellow-500">
-                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.647c1.295.742 1.295 2.545 0 3.286L7.279 20.99c-1.25.717-2.779-.217-2.779-1.643V5.653z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-            </div>
-            <div>
-                <h4 class="font-bold text-gray-800">¿No quieres esperar?</h4>
-                <p class="text-sm text-gray-600">Obtén un análisis extra ahora viendo un anuncio.</p>
-            </div>
-            <button id="prompt-close-button" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-
-    </main>
+        </main>
 
     <div id="premium-modal" class="modal-overlay hidden">
         <div id="confetti-container"></div>
@@ -218,5 +200,3 @@
     <script src="script.js?v=1.1"></script>
 </body>
 </html>
-
-
