@@ -169,11 +169,6 @@ window.onload = async function() {
     });
     
     document.getElementById('buy-premium-button').addEventListener('click', closePremiumModal);
-
-    // NUEVO CÓDIGO: El listener para el botón de prueba
-    document.getElementById('test-ad-button').addEventListener('click', () => {
-        simulateAdView();
-    });
 };
 
 // --- Lógica de Estado y Control ---
@@ -184,7 +179,6 @@ async function getFingerprint() {
         const result = await fp.get();
         return result.visitorId;
     } catch (error) {
-        console.error("Error al generar fingerprint:", error);
         return 'temp_user_' + Date.now(); 
     }
 }
@@ -206,11 +200,11 @@ async function getAnalysisStatus() {
         if (result.success && result.status) {
             usageStatus = result.status;
         } else {
-            console.error("No se pudo obtener el estado inicial.");
+            // Se eliminó el mensaje de consola
         }
         updateDisplayAndControls();
     } catch (e) {
-        console.error("Error al obtener el estado:", e);
+        // Se eliminó el mensaje de consola
     }
 }
 
@@ -301,12 +295,11 @@ function startCooldownTimer(targetTimestamp, element) {
 
 // --- Lógica de Anuncios ---
 
-// --- MODIFICADO ---
-// Esta función ahora llama al código nativo de Android.
+// --- MODIFICADO: Se eliminó la lógica de carga y las alertas ---
 function simulateAdView() {
     const { adCount, adBonusLimit } = usageStatus;
     if (adCount >= adBonusLimit) {
-        alert("Ya has reclamado todos los bonos por anuncio de hoy.");
+        // Se eliminó la alerta. La interfaz de usuario ya debería manejar esto.
         return;
     }
 
@@ -315,49 +308,34 @@ function simulateAdView() {
     adButtonSpan.textContent = "Cargando anuncio...";
     adButtonLoader.classList.remove('hidden');
 
-    // Comprueba si la interfaz nativa de Android ("el puente") está disponible
+    // Llama al código nativo de Android
     if (window.Android && typeof window.Android.showRewardedAd === 'function') {
-        // Llama a la función nativa en tu app de Android
         window.Android.showRewardedAd();
     } else {
-        // Esto se ejecutará si abres la página en un navegador de PC (para pruebas)
-        console.log("Interfaz nativa 'Android' no encontrada. Simulando anuncio para pruebas...");
-        setTimeout(() => {
-            grantAdBonusFromAndroid(); // Llama a la función de recompensa directamente
-        }, 3000);
+        // Lógica de prueba eliminada, ya que el sistema real funciona.
     }
 }
 
 
-// --- NUEVA FUNCIÓN ---
-// Esta función será llamada por el código de Android cuando el usuario gane la recompensa.
+// --- NUEVA FUNCIÓN: Se eliminaron los mensajes de consola y las alertas ---
 async function grantAdBonusFromAndroid() {
-    try {
-        console.log("Recompensa recibida desde Android. Reclamando bono...");
+    await claimAdBonus();
 
-        await claimAdBonus(); // ← si esto falla, lo atrapamos
+    closePremiumModal();
+    // Se eliminó la alerta. La recompensa se mostrará en la interfaz.
 
-        closePremiumModal();
-        alert("¡Genial! Has desbloqueado un uso de bono.");
-
-        if (viewAdButton) {
-            const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
-            if (adButtonSpan) {
-                adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
-            }
-            viewAdButton.disabled = false;
+    if (viewAdButton) {
+        const adButtonSpan = viewAdButton.querySelector('#ad-button-text');
+        if (adButtonSpan) {
+            adButtonSpan.innerHTML = `Ver anuncio → +1 análisis (Bonos: <span id="modal-ad-counter">${usageStatus.adCount}/${usageStatus.adBonusLimit}</span>)`;
         }
+        viewAdButton.disabled = false;
+    }
 
-        if (adButtonLoader) {
-            adButtonLoader.classList.add('hidden');
-        }
-    } catch (error) {
-        console.error("Error en grantAdBonusFromAndroid:", error);
-        alert("Hubo un problema al procesar tu recompensa.");
+    if (adButtonLoader) {
+        adButtonLoader.classList.add('hidden');
     }
 }
-
-
 
 
 async function claimAdBonus() {
@@ -377,11 +355,10 @@ async function claimAdBonus() {
             usageStatus = result.status;
             updateDisplayAndControls(); 
         } else {
-            console.error("Error al reclamar el bono:", result.message);
-            alert("Error: No se pudo registrar el bono. " + result.message);
+            // Se eliminó el mensaje de consola y la alerta
         }
     } catch (e) {
-        console.error("Error de red al reclamar el bono:", e);
+        // Se eliminó el mensaje de consola
     }
 }
 
@@ -448,7 +425,6 @@ async function analyzeImage(base64ImageData) {
         }
 
     } catch (error) {
-        console.error("Error detallado:", error);
         showError(`Lo siento, hubo un error: ${error.message}`);
     } finally {
         buttonText.classList.remove('hidden');
@@ -509,8 +485,7 @@ async function openCamera() {
         await cameraFeed.play();
         cameraModal.classList.remove('hidden');
     } catch (err) {
-        console.error("Error al acceder a la cámara:", err);
-        alert("No se pudo acceder a la cámara. Por favor, asegúrate de haber dado los permisos. Error: " + err.message);
+        showError("No se pudo acceder a la cámara. Por favor, asegúrate de haber dado los permisos. Error: " + err.message);
     }
 }
 
@@ -654,8 +629,7 @@ function copyToClipboard() {
             copyButton.disabled = false;
         }, 2000);
     }).catch(err => {
-        console.error('Error al copiar texto: ', err);
-        alert('No se pudo copiar el texto. Inténtalo manualmente.');
+        showError('No se pudo copiar el texto. Inténtalo manualmente.');
     });
 }
 
@@ -687,4 +661,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 800);
     }, 3000);
 });
-
