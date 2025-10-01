@@ -1,7 +1,7 @@
 // En tu archivo script.js
 
 // --- ¡IMPORTANTE! Pega aquí la URL de tu Web App de Google Script ---
-const googleWebAppUrl = "https://script.google.com/macros/s/AKfycbwv3-prFMuqkerB-e2HVq7dNUvvlyK9RtvI9exS9hmSzsG20T-M9DnWH1ex5roh9iigRA/exec";
+const googleWebAppUrl = "https://script.google.com/macros/s/AKfycbytqUkw9u2HQywOXlNcXsMpJaJZZlh4wXFuDwme3GFJdk-gKgT7JUkT0Cn9mpjQXOfX2A/exec";
 
 // --- Referencias al DOM ---
 const fileInput = document.getElementById('file-input');
