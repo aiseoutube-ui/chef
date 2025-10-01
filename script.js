@@ -160,6 +160,9 @@ window.onload = async function() {
     // Listeners para el nuevo prompt de cooldown
     cooldownAdPrompt.addEventListener('click', (e) => {
         if (e.target.closest('#prompt-close-button')) return;
+        // --- ARREGLADO: El prompt amarillo ahora se oculta al hacer clic en él.
+        cooldownAdPrompt.classList.remove('prompt-visible');
+        cooldownAdPrompt.classList.add('prompt-hidden');
         showPremiumModal(true);
     });
 
@@ -224,11 +227,13 @@ function updateDisplayAndControls() {
     const timeSinceLast = now - lastAnalysisTimestamp;
     
     let isCooldownActive = false;
-    if (lastAnalysisTimestamp !== 0 && timeSinceLast < COOLDOWN_MS) {
+    // --- ARREGLADO: El cooldown visual solo se activa si NO hay un bono disponible.
+    if (lastAnalysisTimestamp !== 0 && timeSinceLast < COOLDOWN_MS && !isBonusActive) {
         isCooldownActive = true;
         const nextFreeTime = lastAnalysisTimestamp + COOLDOWN_MS;
         startCooldownTimer(nextFreeTime, cooldownTimer); 
     } else {
+        if(countdownInterval) clearInterval(countdownInterval);
         cooldownTimer.textContent = 'Listo';
     }
     
