@@ -1,0 +1,7 @@
+{
+  "name": "CusiCusa - AI Recipe Generator",
+  "description": "An intelligent app that analyzes food photos to generate detailed recipes, including local cost estimates and store suggestions. Powered by Gemini.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
