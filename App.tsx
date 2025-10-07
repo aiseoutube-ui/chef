@@ -48,7 +48,8 @@ function App() {
     const fetchUserStatus = useCallback(async () => {
         if (!visitorId) return;
         try {
-            const response = await callWebApp(ApiAction.GET_STATUS, { visitorId });
+            // FIX: The backend expects 'userId', not 'visitorId'.
+            const response = await callWebApp(ApiAction.GET_STATUS, { userId: visitorId });
             if (response.success && response.status) {
                 setUserStatus(response.status);
             } else {
@@ -91,14 +92,15 @@ function App() {
         setRecipe(null);
 
         try {
+            // FIX: The backend expects 'userId', not 'visitorId'.
             const payload = {
-                visitorId,
+                userId: visitorId,
                 imageBase64,
                 location: location ? { lat: location.lat, lon: location.lon } : null,
             };
             const response = await callWebApp(ApiAction.ANALYZE, payload);
             if (response.success) {
-                setRecipe(response.recipe);
+                setRecipe(response.data); // Corrected to use 'data' key as per backend
                 setUserStatus(response.status);
             } else {
                 setError(response.message || 'Analysis failed. Please try again.');
@@ -116,8 +118,10 @@ function App() {
     // This is the function that the Android app will call after a successful ad view.
     const grantAdBonusCallback = useCallback(async () => {
         if (!visitorId) return;
+        setIsClaimingBonus(true);
         try {
-            const response = await callWebApp(ApiAction.CLAIM_AD_BONUS, { visitorId });
+            // FIX: The backend expects 'userId', not 'visitorId'.
+            const response = await callWebApp(ApiAction.CLAIM_AD_BONUS, { userId: visitorId });
             if (response.success && response.status) {
                 setUserStatus(response.status);
                 setIsLimitModalOpen(false); // Close modal on success
