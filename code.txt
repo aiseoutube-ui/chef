@@ -1,0 +1,234 @@
+// En tu archivo de Google Script (Code.gs)
+
+// ===============================================
+// === CONFIGURACIÓN GLOBAL ===
+// ===============================================
+const SPREADSHEET_ID = '1OEyMKrPS2u3VY8Tj8claNSJwXa3OpMsjV2e2k3F5aEU'; // ID de tu Hoja
+const SHEET_NAME = 'Contador';
+const FREE_LIMIT = 3; // Límite de análisis gratis por día
+const AD_BONUS_LIMIT = 2; // Límite de bonos por anuncio por día
+const COOLDOWN_MINUTES = 15; // Cooldown oficial entre análisis (en minutos)
+
+// --- CONFIGURACIÓN DE PRUEBA (SOLO PARA DESARROLLO) ---
+const TEST_COOLDOWN_MS = 60 * 1000; // 1 minuto (60000 milisegundos)
+// ===============================================
+// ===============================================
+
+/**
+ * Función principal que se activa cuando el frontend envía peticiones POST.
+ */
+function doPost(e) {
+  try {
+    const requestData = JSON.parse(e.postData.contents);
+    const userId = requestData.userId;
+    const action = requestData.action;
+
+    const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(SHEET_NAME);
+
+    // 1. OBTENER EL ESTADO DEL USUARIO
+    if (action === 'get_status') {
+      const status = getUserStatus(sheet, userId);
+      return createResponse({ success: true, status: status });
+    }
+    
+    // 2. RECLAMAR BONO POR ANUNCIO
+    if (action === 'claim_ad_bonus') {
+        const status = getUserStatus(sheet, userId);
+        if (status.adCount >= AD_BONUS_LIMIT) {
+             return createResponse({ success: false, message: 'ad_limit_reached', status: status });
+        }
+        
+        const rowIndex = findUserRowIndex(sheet, userId);
+        if (rowIndex !== -1) {
+            sheet.getRange(rowIndex, 4).setValue(status.adCount + 1); // Columna D: AdCount
+            sheet.getRange(rowIndex, 6).setValue(true); // Columna F: IsBonusActive
+        }
+        
+        const updatedStatus = getUserStatus(sheet, userId);
+        return createResponse({ success: true, status: updatedStatus });
+    }
+
+    // 3. ANALIZAR UNA IMAGEN
+    if (action === 'analyze') {
+      const base64ImageData = requestData.imageData;
+      const userLocation = requestData.location;
+
+      const status = getUserStatus(sheet, userId);
+      const now = Date.now();
+      const COOLDOWN_MS = COOLDOWN_MINUTES * 60 * 1000;
+      
+      const hasFreeUses = status.freeCount < status.freeLimit;
+      const canUseBonus = status.isBonusActive === true;
+
+      // 1. Verificar Cooldown (ARREGLADO: El cooldown se ignora si hay un bono activo)
+      if (status.lastAnalysisTimestamp !== 0 && (now - status.lastAnalysisTimestamp) < COOLDOWN_MS && status.isBonusActive === false) {
+          return createResponse({ success: false, message: 'cooldown_active', status: status });
+      }
+
+      // 2. Verificar si hay usos disponibles (gratis O un bono activo)
+      if (!hasFreeUses && !canUseBonus) {
+          return createResponse({ success: false, message: 'limit_reached', status: status });
+      }
+      
+      // Si la validación pasa, procedemos con el análisis de Gemini.
+      const result = analyzeImageInBackend(base64ImageData, userLocation);
+      
+      // Si Gemini tuvo éxito, consumimos el uso.
+      if (result.success) {
+          const rowIndex = findUserRowIndex(sheet, userId);
+          if (rowIndex !== -1) {
+              if (canUseBonus) {
+                  // Prioridad 1: Consumir el bono si está activo.
+                  sheet.getRange(rowIndex, 6).setValue(false); // Columna F (IsBonusActive)
+                  // ARREGLADO: Iniciar cooldown también al usar un bono
+                  sheet.getRange(rowIndex, 5).setValue(now);   // Columna E (Timestamp)
+              } else if (hasFreeUses) {
+                  // Prioridad 2: Consumir un análisis gratis.
+                  sheet.getRange(rowIndex, 3).setValue(status.freeCount + 1); // Columna C (FreeCount)
+                  sheet.getRange(rowIndex, 5).setValue(now); // Columna E (Timestamp)
+              }
+          }
+      }
+      
+      // Adjuntamos el conteo final al resultado del análisis
+      result.status = getUserStatus(sheet, userId);
+      return createResponse(result);
+    }
+
+    return createResponse({ success: false, message: 'Acción no válida' });
+  } catch (error) {
+    return createResponse({ success: false, message: 'Error interno: ' + error.message, status: null });
+  }
+}
+
+// --- LÓGICA DE GESTIÓN DEL ESTADO DEL USUARIO EN GOOGLE SHEETS ---
+
+/**
+ * Busca el índice de fila de un usuario en la hoja.
+ */
+function findUserRowIndex(sheet, userId) {
+    const data = sheet.getRange("A:A").getValues(); // Optimizado para buscar solo en la columna A
+    for (let i = 0; i < data.length; i++) {
+        if (data[i][0] === userId) {
+            return i + 1; // Retorna el número de fila (base 1)
+        }
+    }
+    return -1;
+}
+
+/**
+ * Normaliza el estado del usuario (reinicia si es un nuevo día) y lo retorna.
+ */
+function getUserStatus(sheet, userId) {
+    const today = new Date().toDateString();
+    let rowIndex = findUserRowIndex(sheet, userId);
+    let userRow;
+
+    if (rowIndex === -1) {
+        // Se añade la columna F (IsBonusActive) para nuevos usuarios.
+        const newRow = [userId, new Date(), 0, 0, 0, false];
+        sheet.appendRow(newRow);
+        rowIndex = sheet.getLastRow();
+        userRow = newRow;
+    } else {
+        userRow = sheet.getRange(rowIndex, 1, 1, 6).getValues()[0]; // Leemos las 6 columnas
+    }
+
+    let [ storedId, storedDate, freeCount, adCount, lastAnalysisTimestamp, isBonusActive ] = userRow;
+
+    // Reinicio diario si el día ha cambiado
+    if (new Date(storedDate).toDateString() !== today) {
+        freeCount = 0;
+        adCount = 0;
+        isBonusActive = false;
+        // Reiniciar la hoja
+        sheet.getRange(rowIndex, 2, 1, 5).setValues([[new Date(), freeCount, adCount, 0, isBonusActive]]);
+    }
+
+    let timestampValue = (typeof lastAnalysisTimestamp === 'number') ? lastAnalysisTimestamp : 0;
+    // *** TRUCO DE PRUEBA: Si el valor en la hoja es 1, forzar cooldown a 1 minuto ***
+    if (timestampValue === 1) {
+        const COOLDOWN_TOTAL_MS = COOLDOWN_MINUTES * 60 * 1000;
+        timestampValue = Date.now() - (COOLDOWN_TOTAL_MS - TEST_COOLDOWN_MS);
+        sheet.getRange(rowIndex, 5).setValue(timestampValue);
+    }
+
+    // Se añade isBonusActive al objeto de estado que se retorna.
+    return {
+        freeCount: Number(freeCount),
+        adCount: Number(adCount),
+        lastAnalysisTimestamp: timestampValue,
+        isBonusActive: isBonusActive === true, // Asegurar que sea booleano
+        freeLimit: FREE_LIMIT,
+        adBonusLimit: AD_BONUS_LIMIT
+    };
+}
+
+
+// --- LÓGICA DE LLAMADA AL API DE GEMINI ---
+function analyzeImageInBackend(base64ImageData, userLocation) {
+  try {
+    const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+    if (!apiKey) {
+      throw new Error("API Key no configurada. Por favor, ejecuta la función 'setupApiKey' primero desde el editor de Apps Script.");
+    }
+
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const locationText = userLocation ?
+      `El usuario está en latitud ${userLocation.lat}, longitud ${userLocation.lon}.` : "No se pudo obtener la ubicación del usuario, asume que están en Estados Unidos.";
+    
+    const systemPrompt = `Eres un chef experto y analista de costos. ${locationText} Analiza la imagen del platillo.
+    IMPORTANTE: Tu objetivo principal es crear una receta para UNA SOLA PERSONA.
+    Tu respuesta DEBE ser un objeto JSON VÁLIDO sin texto adicional ni markdown.
+    El JSON debe contener:
+    1. 'dishName': El nombre del platillo.
+    2. 'ingredients': Un array de objetos, cada uno con 'name', 'quantity', 'unit' y 'estimatedLocalPrice' (costo para UNA porción, en moneda local).
+    3. 'instructions': Un array de strings con los pasos de preparación.
+    4. 'currencyCode': El código de 3 letras de la moneda local.
+    5. 'supermarketSuggestions': Un array con 2-3 nombres de supermercados comunes en la región.
+    6. 'preparationTime': Una string con el tiempo estimado de preparación (ej. "25-30 min").
+    7. 'difficulty': Una string que sea 'Fácil', 'Intermedio' o 'Difícil'.
+    8. 'calories': Un número con las Kcal estimadas por porción.`;
+
+    const payload = {
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ parts: [
+        { text: "Analiza este platillo y dame la receta para UNA SOLA PERSONA, en formato JSON."}, 
+        { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }
+      ] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    };
+
+    const options = {
+      'method': 'post',
+      'contentType': 'application/json',
+      'payload': JSON.stringify(payload),
+      'muteHttpExceptions': true
+    };
+
+    const response = UrlFetchApp.fetch(apiUrl, options);
+    const responseBody = JSON.parse(response.getContentText());
+
+    if (response.getResponseCode() === 200 && responseBody.candidates?.[0]) {
+      return { success: true, data: JSON.parse(responseBody.candidates[0].content.parts[0].text) };
+    } else {
+      throw new Error(`Error en la API de Gemini: ${response.getContentText()}`);
+    }
+  } catch (error) {
+    return { success: false, message: error.toString() };
+  }
+}
+
+function createResponse(data) {
+    return ContentService.createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- CONFIGURACIÓN DEL API KEY ---
+function setupApiKey() {
+  const scriptProperties = PropertiesService.getScriptProperties();
+  scriptProperties.setProperty('GEMINI_API_KEY', 'TU_CLAVE_AQUÍ');
+  Logger.log("Clave API guardada con éxito.");
+}
