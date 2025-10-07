@@ -14,13 +14,13 @@ const ButtonLoader: React.FC = () => (
 interface LimitModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onClaimBonus: () => Promise<void>;
+    onClaimBonus: () => void;
+    isClaiming: boolean;
     reason: 'cooldown' | 'limit';
     status: UserStatus;
 }
 
-export const LimitModal: React.FC<LimitModalProps> = ({ isOpen, onClose, onClaimBonus, reason, status }) => {
-    const [isClaiming, setIsClaiming] = useState(false);
+export const LimitModal: React.FC<LimitModalProps> = ({ isOpen, onClose, onClaimBonus, isClaiming, reason, status }) => {
     const [cooldownText, setCooldownText] = useState('');
     const { adCount, adBonusLimit, lastAnalysisTimestamp } = status;
     const remainingAdsClaimable = adBonusLimit - adCount;
@@ -42,12 +42,6 @@ export const LimitModal: React.FC<LimitModalProps> = ({ isOpen, onClose, onClaim
 
         return () => clearInterval(interval);
     }, [isOpen, reason, lastAnalysisTimestamp]);
-
-    const handleClaim = async () => {
-        setIsClaiming(true);
-        await onClaimBonus();
-        setIsClaiming(false);
-    };
     
     if (!isOpen) return null;
 
@@ -68,7 +62,7 @@ export const LimitModal: React.FC<LimitModalProps> = ({ isOpen, onClose, onClaim
                 <div className="flex flex-col gap-3">
                     {canClaim ? (
                          <button 
-                            onClick={handleClaim} 
+                            onClick={onClaimBonus} 
                             disabled={isClaiming}
                             className="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold text-white bg-brand-orange hover:bg-brand-orange-light transition-transform transform hover:scale-105 disabled:bg-gray-300 disabled:scale-100"
                         >

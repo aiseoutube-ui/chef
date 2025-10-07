@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { IntroOverlay } from './components/IntroOverlay';
 import { Header } from './components/Header';
@@ -16,6 +14,18 @@ import { useLocation } from './hooks/useLocation';
 import { callWebApp } from './services/apiService';
 import type { Recipe, UserStatus, LocationCoords } from './types';
 import { ApiAction } from './types';
+
+// Declare the Android interface and callbacks on the window object
+// to ensure TypeScript knows about them.
+declare global {
+    interface Window {
+        Android?: {
+            showRewardedVideoAd: () => void;
+        };
+        adRewardGranted: () => void;
+        adRewardFailed: () => void;
+    }
+}
 
 type View = 'upload' | 'loading' | 'results';
 
@@ -37,6 +47,7 @@ const App: React.FC = () => {
     const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
     const [showLimitModal, setShowLimitModal] = useState(false);
     const [modalReason, setModalReason] = useState<'cooldown' | 'limit'>('limit');
+    const [isClaimingBonus, setIsClaimingBonus] = useState(false);
 
     const visitorId = useFingerprint();
     const { location, error: locationError } = useLocation();
@@ -52,6 +63,58 @@ const App: React.FC = () => {
             console.error("Failed to fetch user status:", err);
         }
     }, [visitorId]);
+    
+    // This function now handles the final step: calling the backend.
+    const handleClaimBonus = useCallback(async () => {
+        if (!visitorId) {
+            setIsClaimingBonus(false);
+            return;
+        }
+        try {
+            const result = await callWebApp<{ status: UserStatus }>(ApiAction.CLAIM_AD_BONUS, { userId: visitorId });
+            if (result.success) {
+                setUserStatus(result.status);
+                setShowLimitModal(false);
+            } else {
+                console.error("Failed to claim bonus after ad:", result.message);
+            }
+        } catch (err) {
+            console.error("Failed to claim ad bonus:", err);
+        } finally {
+            setIsClaimingBonus(false); // Reset loading state
+        }
+    }, [visitorId]);
+
+    // This effect sets up the global callback functions for Android to call.
+    useEffect(() => {
+        window.adRewardGranted = () => {
+            console.log("Ad reward granted, claiming bonus from backend...");
+            handleClaimBonus();
+        };
+
+        window.adRewardFailed = () => {
+            console.log("Ad reward failed or was cancelled by user.");
+            setIsClaimingBonus(false); // Reset the button loading state
+        };
+
+        return () => {
+            (window as { adRewardGranted?: () => void }).adRewardGranted = undefined;
+            (window as { adRewardFailed?: () => void }).adRewardFailed = undefined;
+        };
+    }, [handleClaimBonus]);
+    
+    // This new function initiates the ad reward process.
+    const handleRequestBonus = () => {
+        setIsClaimingBonus(true);
+        if (window.Android && typeof window.Android.showRewardedVideoAd === 'function') {
+            console.log("Requesting rewarded ad from Android WebView...");
+            window.Android.showRewardedVideoAd();
+        } else {
+            console.warn("Android interface not found. Granting bonus directly for development/testing.");
+            handleClaimBonus(); // Fallback for browsers
+        }
+    };
+
 
     useEffect(() => {
         const introTimer = setTimeout(() => setShowIntro(false), 3000);
@@ -67,7 +130,7 @@ const App: React.FC = () => {
         let interval: number;
         if (view === 'loading') {
             let messageIndex = 0;
-            interval = setInterval(() => {
+            interval = window.setInterval(() => {
                 messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
                 setLoadingMessage(LOADING_MESSAGES[messageIndex]);
             }, 2500);
@@ -113,19 +176,6 @@ const App: React.FC = () => {
             if (shouldShowResults) {
                 setView('results');
             }
-        }
-    };
-    
-    const handleClaimBonus = async () => {
-        if (!visitorId) return;
-        try {
-            const result = await callWebApp<{ status: UserStatus }>(ApiAction.CLAIM_AD_BONUS, { userId: visitorId });
-            if (result.success) {
-                setUserStatus(result.status);
-                setShowLimitModal(false);
-            }
-        } catch (err) {
-            console.error("Failed to claim ad bonus:", err);
         }
     };
     
@@ -193,7 +243,8 @@ const App: React.FC = () => {
             {userStatus && <LimitModal
                 isOpen={showLimitModal}
                 onClose={() => setShowLimitModal(false)}
-                onClaimBonus={handleClaimBonus}
+                onClaimBonus={handleRequestBonus}
+                isClaiming={isClaimingBonus}
                 reason={modalReason}
                 status={userStatus}
             />}
