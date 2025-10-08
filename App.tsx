@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { IntroOverlay } from './components/IntroOverlay';
 import { Header } from './components/Header';
@@ -25,6 +23,9 @@ const LOADING_MESSAGES = [
     "Calculando los costos locales...",
     "¡Casi listo! Dando los toques finales...",
 ];
+
+// NUEVO: Definir la duración del cooldown como una constante
+const COOLDOWN_MS = 15 * 60 * 1000; // 15 minutos
 
 const App: React.FC = () => {
     const [showIntro, setShowIntro] = useState(true);
@@ -63,11 +64,10 @@ const App: React.FC = () => {
     }, [fetchUserStatus]);
 
     useEffect(() => {
-        // FIX: Replaced NodeJS.Timeout with 'number' for browser compatibility.
         let interval: number;
         if (view === 'loading') {
             let messageIndex = 0;
-            interval = setInterval(() => {
+            interval = window.setInterval(() => {
                 messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
                 setLoadingMessage(LOADING_MESSAGES[messageIndex]);
             }, 2500);
@@ -81,7 +81,7 @@ const App: React.FC = () => {
         setView('loading');
         setError(null);
         setRecipe(null);
-        setLoadingMessage(LOADING_MESSAGES[0]); // Reset message on new analysis
+        setLoadingMessage(LOADING_MESSAGES[0]);
         let shouldShowResults = true;
 
         try {
@@ -104,7 +104,7 @@ const App: React.FC = () => {
                     setView('upload');
                 } else {
                     setError(result.message || 'An unknown error occurred.');
-                    shouldShowResults = true;
+                    shouldShowResults = true; // Show error in results view
                 }
             }
         } catch (err) {
@@ -140,6 +140,28 @@ const App: React.FC = () => {
         setImageBase64(null);
     }
 
+    // ================================================================
+    // NUEVO: LÓGICA PARA DETERMINAR SI EL BOTÓN DE BONO DEBE MOSTRARSE
+    // ================================================================
+    let showBonusButton = false;
+    let isCooldownActive = false;
+
+    if (userStatus) {
+        const { freeCount, adCount, freeLimit, adBonusLimit, lastAnalysisTimestamp, isBonusActive } = userStatus;
+        
+        const remainingFree = freeLimit - freeCount;
+        const remainingAdsClaimable = adBonusLimit - adCount;
+        
+        isCooldownActive = (Date.now() - (lastAnalysisTimestamp || 0)) < COOLDOWN_MS && !isBonusActive;
+        
+        const isBlockedByLimit = remainingFree <= 0 && !isBonusActive;
+        const canGetBonus = remainingAdsClaimable > 0;
+
+        if ((isCooldownActive || isBlockedByLimit) && canGetBonus) {
+            showBonusButton = true;
+        }
+    }
+
     const renderContent = () => {
         const isLoading = view === 'loading';
         switch(view) {
@@ -158,12 +180,26 @@ const App: React.FC = () => {
                 return (
                     <>
                         <LocationStatus location={location} error={locationError} />
-                        {userStatus && <StatusTracker status={userStatus} onUseBonus={() => {
-                            const isCooldown = (Date.now() - (userStatus.lastAnalysisTimestamp || 0)) < 15 * 60 * 1000;
-                            setModalReason(isCooldown ? 'cooldown' : 'limit');
-                            setShowLimitModal(true);
-                        }} />}
+                        {userStatus && <StatusTracker status={userStatus} />}
                         <SpecialOfferCard />
+                        
+                        {/* ================================================================ */}
+                        {/* NUEVO: BOTÓN DE BONO QUE APARECE CONDICIONALMENTE              */}
+                        {/* ================================================================ */}
+                        {showBonusButton && (
+                            <div className="mt-4 text-center">
+                                <button
+                                    onClick={() => {
+                                        setModalReason(isCooldownActive ? 'cooldown' : 'limit');
+                                        setShowLimitModal(true);
+                                    }}
+                                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-bold py-3 px-4 rounded-xl shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-transform transform hover:scale-105"
+                                >
+                                    ¡Salta la espera! Obtén +1 análisis ✨
+                                </button>
+                            </div>
+                        )}
+                        
                         <div className="space-y-6 mt-6 flex-grow flex flex-col justify-center">
                             <ImageHandler imageBase64={imageBase64} onImageSelect={setImageBase64} onReset={resetImage} />
                         </div>
