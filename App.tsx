@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+
+import React, { useState, useEffect, useCallback } from 'react';
 import { IntroOverlay } from './components/IntroOverlay';
 import { Header } from './components/Header';
 import { LocationStatus } from './components/LocationStatus';
@@ -62,15 +63,16 @@ const App: React.FC = () => {
     }, [fetchUserStatus]);
 
     useEffect(() => {
-        let interval: number | undefined;
+        // FIX: Replaced NodeJS.Timeout with 'number' for browser compatibility.
+        let interval: number;
         if (view === 'loading') {
             let messageIndex = 0;
-            interval = window.setInterval(() => {
+            interval = setInterval(() => {
                 messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
                 setLoadingMessage(LOADING_MESSAGES[messageIndex]);
             }, 2500);
         }
-        return () => window.clearInterval(interval);
+        return () => clearInterval(interval);
     }, [view]);
 
     const handleAnalyze = async () => {
@@ -114,39 +116,18 @@ const App: React.FC = () => {
         }
     };
     
-    const handleClaimBonus = useCallback(async () => {
+    const handleClaimBonus = async () => {
         if (!visitorId) return;
         try {
             const result = await callWebApp<{ status: UserStatus }>(ApiAction.CLAIM_AD_BONUS, { userId: visitorId });
             if (result.success) {
                 setUserStatus(result.status);
                 setShowLimitModal(false);
-            } else {
-                console.error("Backend failed to claim bonus:", result.message);
-                alert("No se pudo reclamar el bono. Por favor, inténtalo de nuevo.");
             }
         } catch (err) {
             console.error("Failed to claim ad bonus:", err);
         }
-    }, [visitorId]);
-
-    // Use a ref to hold the latest callback to avoid stale closures in the global function
-    const claimBonusCallbackRef = useRef(handleClaimBonus);
-    useEffect(() => {
-        claimBonusCallbackRef.current = handleClaimBonus;
-    }, [handleClaimBonus]);
-
-    // Effect to expose the bonus granting function to the native WebView
-    useEffect(() => {
-        window.grantAdBonusFromAndroid = () => {
-            console.log("grantAdBonusFromAndroid called from native Android app.");
-            claimBonusCallbackRef.current();
-        };
-
-        return () => {
-            window.grantAdBonusFromAndroid = undefined;
-        };
-    }, []);
+    };
     
     const resetAnalysis = () => {
         setRecipe(null);
@@ -212,6 +193,7 @@ const App: React.FC = () => {
             {userStatus && <LimitModal
                 isOpen={showLimitModal}
                 onClose={() => setShowLimitModal(false)}
+                onClaimBonus={handleClaimBonus}
                 reason={modalReason}
                 status={userStatus}
             />}
