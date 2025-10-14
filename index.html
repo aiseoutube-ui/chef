@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CusiCusa - Food AI</title>
+    
+    <!-- 1. SCRIPT PRINCIPAL DE TAILWIND (DEBE IR PRIMERO) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. SCRIPT DE CONFIGURACIÓN DE TAILWIND (DESPUÉS DEL PRINCIPAL) -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { 'sans': ['Poppins', 'sans-serif'] },
+            colors: {
+              brand: {
+                orange: '#F97316',
+                'orange-light': '#FB923C',
+              }
+            }
+          }
+        }
+      }
+    </script>
+
+    <!-- 3. OTROS SCRIPTS (COMO FINGERPRINTJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@4/dist/fp.umd.min.js"></script>
+
+    <!-- Fuentes de Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Estilos y Animaciones personalizadas -->
+    <style>
+      body {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f3f4f6;
+      }
+      .hidden { display: none !important; }
+
+      /* === Custom Scrollbar === */
+      ::-webkit-scrollbar { width: 8px; }
+      ::-webkit-scrollbar-track { background: #f1f1f1; }
+      ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+      /* === Animaciones de IntroOverlay.tsx === */
+      @keyframes logoFloat {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+      }
+      @keyframes textFadeIn {
+          0% { opacity: 0; transform: translateY(30px); }
+          100% { opacity: 1; transform: translateY(0px); }
+      }
+      @keyframes subtitleFadeIn {
+          0% { opacity: 0; transform: translateY(20px); }
+          50% { opacity: 0; transform: translateY(20px); }
+          100% { opacity: 1; transform: translateY(0px); }
+      }
+      .animate-logoFloat { animation: logoFloat 4s ease-in-out infinite; }
+      .animate-textFadeIn { animation: textFadeIn 1s ease-out; }
+      .animate-subtitleFadeIn { animation: subtitleFadeIn 1.5s ease-out; }
+
+      /* === Animaciones de Header.tsx === */
+      @keyframes subtle-pulse {
+          0%, 100% {
+              transform: scale(1);
+              box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+          }
+          70% {
+              transform: scale(1.05);
+              box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+          }
+      }
+      .animate-subtle-pulse {
+          animation: subtle-pulse 2.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
+      }
+      @keyframes ring-bell {
+          0%, 100% { transform: rotate(0); }
+          10%, 30%, 50%, 70%, 90% { transform: rotate(-10deg); }
+          20%, 40%, 60%, 80% { transform: rotate(10deg); }
+      }
+      .animate-ring {
+          animation: ring-bell 1s ease-in-out;
+      }
+
+      /* === Animaciones de Modales (pop-in) === */
+      @keyframes pop-in { 
+          0% { opacity: 0; transform: scale(0.9); } 
+          100% { opacity: 1; transform: scale(1); }
+      }
+      .animate-modal-pop-in { 
+          animation: pop-in 0.3s ease-out forwards;
+      }
+      
+      /* === Animación de NotificationBanner.tsx === */
+      @keyframes slide-down {
+          0% { opacity: 0; transform: translate(-50%, -30px); }
+          100% { opacity: 1; transform: translate(-50%, 0); }
+      }
+      .animate-slide-down { animation: slide-down 0.5s ease-out forwards; }
+
+      /* === Animación de ResultsDisplay.tsx === */
+      @keyframes slideInUp { 
+          0% { opacity: 0; transform: translateY(20px); } 
+          100% { opacity: 1; transform: translateY(0); }
+      }
+      .animate-slideInUp { animation: slideInUp 0.5s ease-out; }
+      @keyframes fadeIn {
+          0% { opacity: 0; }
+          100% { opacity: 1; }
+      }
+      .animate-fadeIn { animation: fadeIn 0.5s ease-out; }
+
+      /* === Animaciones de Loader.tsx (SVG) === */
+      .steam { stroke: #F97316; stroke-width: 2; stroke-linecap: round; animation: steam-animate 3s infinite ease-out; }
+      .steam.white { stroke: #FFFFFF; }
+      @keyframes steam-animate {
+          0% { stroke-dasharray: 0 10; transform: translateY(15px); opacity: 0; }
+          20% { stroke-dasharray: 5 5; transform: translateY(5px); opacity: 1; }
+          80% { stroke-dasharray: 5 5; transform: translateY(-15px); opacity: 1; }
+          100% { stroke-dasharray: 0 10; transform: translateY(-25px); opacity: 0; }
+      }
+      .steam-1 { animation-delay: 0s; }
+      .steam-2 { animation-delay: 0.5s; }
+      .steam-3 { animation-delay: 1s; }
+      .pot-lid { animation: lid-bounce 1.5s infinite ease-in-out; transform-origin: center; }
+      @keyframes lid-bounce {
+          0%, 100% { transform: translateY(0) rotate(0); }
+          25% { transform: translateY(-2px) rotate(-2deg); }
+          50% { transform: translateY(0) rotate(0); }
+          75% { transform: translateY(-2px) rotate(2deg); }
+      }
+      .wok-group { animation: wok-toss 2.5s infinite ease-in-out; transform-origin: 15% 75%; }
+      @keyframes wok-toss {
+          0%, 100% { transform: rotate(0deg) translateY(0); }
+          25% { transform: rotate(15deg) translateY(-8px); }
+          50% { transform: rotate(-5deg); }
+          75% { transform: rotate(15deg) translateY(-8px); }
+      }
+      .food-particle { animation: food-toss 2.5s infinite ease-out; opacity: 0; }
+      @keyframes food-toss {
+          0%, 10%, 90%, 100% { transform: translateY(0) rotate(0); opacity: 0; }
+          25% { transform: translateY(-25px) rotate(90deg); opacity: 1; }
+          50% { transform: translateY(-15px) rotate(180deg); opacity: 1; }
+          75% { transform: translateY(-25px) rotate(270deg); opacity: 1; }
+      }
+      .food1 { animation-delay: 0s; }
+      .food2 { animation-delay: 0.1s; }
+      .food3 { animation-delay: 0.2s; }
+      .flame { fill: #F97316; animation: flame-flicker 1.5s infinite ease-in-out; transform-origin: 50% 100%; }
+      .flame.white { fill: #FFFFFF; }
+      @keyframes flame-flicker {
+          0%, 100% { transform: scaleY(1) skewX(0); opacity: 0.9; }
+          25% { transform: scaleY(1.2) skewX(8deg); opacity: 1; }
+          50% { transform: scaleY(0.8) skewX(-8deg); opacity: 0.8; }
+          75% { transform: scaleY(1.1) skewX(4deg); opacity: 1; }
+      }
+      .flame-1 { animation-delay: 0s; }
+      .flame-2 { animation-delay: 0.2s; }
+      .flame-3 { animation-delay: 0.1s; }
+      .shaker { animation: shake 2s infinite ease-in-out; }
+      .shaker-salt { transform-origin: bottom center; animation-delay: 0s; }
+      .shaker-pepper { transform-origin: bottom center; animation-delay: -1s; }
+      @keyframes shake {
+          0%, 100% { transform: translateX(0) rotate(0); }
+          25% { transform: translateX(-2px) rotate(-5deg); }
+          75% { transform: translateX(2px) rotate(5deg); }
+      }
+      .particle { fill: #F97316; animation: fall 2s infinite linear; opacity: 0; }
+      .particle.white { fill: #FFFFFF; }
+      @keyframes fall {
+          0% { transform: translateY(0); opacity: 0; }
+          20% { opacity: 1; }
+          80% { transform: translateY(20px); opacity: 1; }
+          100% { transform: translateY(25px); opacity: 0; }
+      }
+      .p1 { animation-delay: 0.1s; } .p2 { animation-delay: 0.6s; } .p3 { animation-delay: 1.1s; }
+      .p4 { animation-delay: 1.6s; } .p5 { animation-delay: 0.3s; } .p6 { animation-delay: 1.3s; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- === INICIO CONTENEDOR PRINCIPAL === -->
+    <div id="root">
+        
+        <!-- Intro Overlay -->
+        <div id="intro-overlay" class="fixed inset-0 bg-gradient-to-br from-orange-400 to-amber-500 flex flex-col justify-center items-center z-50 transition-opacity duration-1000">
+            <img src="https://yt3.googleusercontent.com/UpzZjCNpkV7xb49ViYY2hDoTcyjf8Jo8NUBftU8qKgELba-leKetstmtqGTnwnk6KNUzK61PJg=s160-c-k-c0x00ffffff-no-rj" alt="CusiCusa Logo" class="w-32 h-32 rounded-full shadow-2xl mb-8 animate-logoFloat" />
+            <h1 class="text-white font-sans text-5xl font-extrabold tracking-tight animate-textFadeIn">CusiCusa</h1>
+            <p class="text-white/90 text-xl mt-4 animate-subtitleFadeIn">Food AI</p>
+        </div>
+
+        <!-- Notification Banner -->
+        <div id="notification-banner" class="hidden fixed top-5 left-1/2 -translate-x-1/2 w-[90%] max-w-md z-50">
+            <div class="bg-white p-4 rounded-xl shadow-2xl flex items-center gap-4 border border-gray-100">
+                <div class="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                    <span class="text-white text-xl">✨</span>
+                </div>
+                <p id="notification-message" class="flex-grow text-sm font-semibold text-gray-700"></p>
+                <button id="notification-close-btn" class="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors" aria-label="Cerrar notificación">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- App Container -->
+        <div class="flex justify-center items-start min-h-screen p-4">
+            <main class="bg-white rounded-3xl w-full max-w-md shadow-lg my-8 relative flex flex-col min-h-[calc(100vh-4rem)]">
+                
+                <!-- Header -->
+                <header id="app-header" class="bg-brand-orange text-white p-6 pt-8 rounded-t-3xl shadow-lg relative z-10 overflow-hidden">
+                    <div class="absolute top-[-20px] left-[-30px] w-24 h-24 bg-white/10 rounded-full" aria-hidden="true"></div>
+                    <div class="absolute top-[50px] right-[-40px] w-32 h-32 bg-white/10 rounded-full" aria-hidden="true"></div>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-center">
+                            <button id="header-logo-btn" class="focus:outline-none rounded-full focus:ring-4 focus:ring-white/50" aria-label="Abrir menú">
+                                <img src="https://yt3.googleusercontent.com/UpzZjCNpkV7xb49ViYY2hDoTcyjf8Jo8NUBftU8qKgELba-leKetstmtqGTnwnk6KNUzK61PJg=s160-c-k-c0x00ffffff-no-rj" alt="CusiCusa Logo" class="w-16 h-16 rounded-full shadow-lg border-2 border-white/50 animate-subtle-pulse"/>
+                            </button>
+                            <div class="relative">
+                                <button id="header-notification-btn" aria-label="Notificaciones" class="p-2 rounded-full hover:bg-white/10 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>
+                                </button>
+                                <span id="header-notification-dot" class="hidden absolute top-1.5 right-1.5 block h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-brand-orange"></span>
+                            </div>
+                        </div>
+                        <div class="text-center my-4">
+                            <h1 class="text-4xl font-extrabold tracking-tighter">CusiCusa</h1>
+                            <p class="text-xl font-semibold text-amber-200 -mt-1">Food AI</p>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Content Area -->
+                <div class="p-6 flex-grow flex flex-col overflow-y-auto">
+                    
+                    <!-- === VISTAS DINÁMICAS === -->
+                    <div id="view-upload" class="">
+                        <div id="location-status" class="text-center font-medium text-xs flex items-center justify-center gap-1.5"></div>
+                        <div id="status-tracker"></div>
+                        <div id="last-recipe-card" class="my-4 hidden">
+                            <button id="show-last-recipe-btn" class="w-full flex items-center gap-4 text-left p-4 rounded-2xl bg-amber-50 border-2 border-amber-200 text-amber-800 transition-all duration-300 hover:bg-amber-100 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-amber-300">
+                                <div class="flex-shrink-0 w-12 h-12 rounded-lg bg-white flex items-center justify-center shadow-sm">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002 2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
+                                </div>
+                                <div class="flex-grow min-w-0">
+                                    <p class="font-bold">Ver Última Receta</p>
+                                    <p id="last-recipe-name" class="text-sm opacity-80 truncate"></p>
+                                </div>
+                            </button>
+                        </div>
+                        <div id="special-offer-card"></div>
+                        <div class="space-y-6 mt-6 flex-grow flex flex-col justify-center">
+                            <div class="flex bg-gray-100 p-1 rounded-full mb-6 max-w-sm mx-auto">
+                                <button id="mode-photo-btn" class="flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-300 bg-white text-brand-orange shadow" aria-pressed="true">Desde Foto</button>
+                                <button id="mode-ingredients-btn" class="flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-300 text-gray-500 hover:bg-gray-200" aria-pressed="false">Desde Ingredientes</button>
+                            </div>
+                            <div id="analysis-mode-container">
+                                <!-- Contenido de ImageHandler o IngredientsInput se inyectará aquí -->
+                            </div>
+                        </div>
+                        <div class="mt-auto pt-6 flex flex-col gap-4">
+                            <div id="analyze-button-container"></div>
+                            <!-- Banner Ad Placeholder logic handled in JS -->
+                        </div>
+                    </div>
+
+                    <div id="view-loading" class="hidden">
+                        <div class="flex-grow flex flex-col justify-center items-center text-center p-4">
+                            <div id="loader-animation-container"></div>
+                            <h2 class="text-gray-700 font-bold text-2xl mt-6">Cocinando tu receta...</h2>
+                            <p id="loading-message" class="text-gray-500 text-md mt-2 transition-opacity duration-500"></p>
+                        </div>
+                    </div>
+
+                    <div id="view-results" class="hidden">
+                        <!-- El contenido de ResultsDisplay se inyectará aquí -->
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="text-center p-4 mt-auto border-t border-gray-100">
+                    <p class="text-xs text-gray-400 font-medium">CusiCusa - Powered by Gemini</p>
+                </div>
+            </main>
+        </div>
+
+        <!-- === MODALES (Ocultos por defecto) === -->
+        
+        <!-- Menu Modal -->
+        <div id="menu-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+            <div class="bg-white p-6 rounded-3xl shadow-xl max-w-sm w-full transform transition-transform duration-300 scale-95 animate-modal-pop-in">
+                <div class="text-center mb-6">
+                    <img src="https://yt3.googleusercontent.com/UpzZjCNpkV7xb49ViYY2hDoTcyjf8Jo8NUBftU8qKgELba-leKetstmtqGTnwnk6KNUzK61PJg=s160-c-k-c0x00ffffff-no-rj" alt="CusiCusa Logo" class="w-20 h-20 rounded-full shadow-lg border-2 border-white/50 mx-auto mb-4" />
+                    <h3 class="text-2xl font-bold text-gray-800">CusiCusa Food AI</h3>
+                    <p id="app-version" class="text-sm text-gray-500"></p>
+                </div>
+                <div class="flex flex-col gap-3">
+                    <button id="privacy-policy-btn" class="text-left w-full p-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Política de Privacidad</button>
+                    <button id="updates-btn" class="text-left w-full p-4 rounded-xl font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">Ver Actualizaciones</button>
+                    <div class="my-2 border-t border-gray-200"></div>
+                    <button id="simulate-ad-btn" class="text-left w-full p-4 rounded-xl font-semibold text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors"><span class="font-bold">[DEV]</span> Simular Anuncio Visto</button>
+                </div>
+                <button id="menu-modal-close-btn" class="w-full mt-6 h-12 flex items-center justify-center rounded-xl font-semibold text-white bg-brand-orange hover:bg-brand-orange-light transition-transform transform hover:scale-105">Cerrar</button>
+            </div>
+        </div>
+        
+        <!-- Premium/Limit Modal -->
+        <div id="limit-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+            <div class="bg-white p-6 rounded-2xl shadow-xl text-center max-w-sm w-full transform transition-transform duration-300 scale-95 animate-modal-pop-in">
+                 <div id="limit-modal-icon-container" class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 -mt-12 mb-4 shadow-lg">
+                    <span id="limit-modal-icon" class="text-3xl"></span>
+                </div>
+                <h3 id="limit-modal-title" class="text-2xl font-bold text-gray-800 mb-2"></h3>
+                <p id="limit-modal-description" class="text-gray-500 mb-6"></p>
+                <div id="limit-modal-actions" class="flex flex-col gap-3"></div>
+            </div>
+        </div>
+
+        <!-- Premium "Guardar" Modal -->
+        <div id="premium-save-modal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+            <div class="bg-white p-6 rounded-2xl shadow-xl text-center max-w-sm w-full transform transition-transform duration-300 scale-95 animate-modal-pop-in">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 -mt-12 mb-4 shadow-lg">
+                    <svg class="h-8 w-8 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345h5.364c.54 0 .82.733.424 1.11l-4.29 3.13a.563.563 0 00-.182.635l2.125 5.111a.563.563 0 01-.84.62l-4.29-3.13a.563.563 0 00-.606 0l-4.29 3.13a.563.563 0 01-.84-.62l2.125-5.111a.563.563 0 00-.182-.635l-4.29-3.13a.563.563 0 01.424-1.11h5.364a.563.563 0 00.475-.345l2.125-5.111z" /></svg>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Función Pro Exclusiva</h3>
+                <p class="text-gray-500 mb-6">¡Guarda tus recetas favoritas y crea tu propio libro de cocina digital con FoodAI Pro!</p>
+                <div class="flex flex-col gap-3">
+                    <button id="premium-save-upgrade-btn" class="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold text-white bg-brand-orange hover:bg-brand-orange-light transition-transform transform hover:scale-105">Actualizar a Pro</button>
+                    <button id="premium-save-close-btn" class="w-full h-12 flex items-center justify-center rounded-xl font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300 transition-transform transform hover:scale-105">Quizás más tarde</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Modal -->
+        <div id="camera-modal" class="hidden fixed inset-0 bg-black z-50 flex justify-center items-center">
+            <video id="camera-video" class="w-full h-full object-cover hidden" playsinline></video>
+            <canvas id="camera-canvas" class="hidden"></canvas>
+            <div id="camera-loader" class="text-white flex flex-col items-center">
+                <!-- Loader SVG se inyectará aquí -->
+                <p class="mt-4">Iniciando cámara...</p>
+            </div>
+            <p id="camera-error" class="hidden text-white text-center p-4"></p>
+            <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/70 to-transparent flex justify-around items-center">
+                <button id="camera-cancel-btn" class="text-white font-semibold text-lg">Cancelar</button>
+                <button id="camera-capture-btn" class="w-20 h-20 rounded-full bg-white border-4 border-white shadow-lg ring-4 ring-black/30" aria-label="Capturar foto"></button>
+                <button id="camera-switch-btn" class="text-white font-semibold text-lg">Girar</button>
+            </div>
+        </div>
+
+    </div>
+    <!-- === FIN CONTENEDOR PRINCIPAL === -->
+
+    <script src="script.js" defer></script>
+</body>
+</html>
+
