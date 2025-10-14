@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     const CACHE_PREFIX = 'cusicusa_cache_';
     const LAST_RECIPE_KEY = 'cusicusa_last_recipe';
+    
+    // Determinar qué almacenamiento usar (localStorage para persistencia en móvil)
+    const storage = typeof window.localStorage !== 'undefined' ? window.localStorage : null;
 
 
     // =====================================================================
@@ -122,32 +125,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const cacheService = {
         get: (key) => {
-            if (!key) return null;
+            if (!storage || !key) return null;
             try {
-                const item = window.sessionStorage.getItem(`${CACHE_PREFIX}${key}`);
+                const item = storage.getItem(`${CACHE_PREFIX}${key}`);
                 return item ? JSON.parse(item) : null;
             } catch (e) { console.error("Cache read error:", e); return null; }
         },
         set: (key, value) => {
-            if (!key) return;
+            if (!storage || !key) return;
             try {
-                window.sessionStorage.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(value));
+                storage.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(value));
             } catch (e) { console.error("Cache write error:", e); }
         },
         getLast: () => {
+            if (!storage) return null;
             try {
-                const item = window.sessionStorage.getItem(LAST_RECIPE_KEY);
+                const item = storage.getItem(LAST_RECIPE_KEY);
                 return item ? JSON.parse(item) : null;
             } catch (e) { console.error("Cache read last error:", e); return null; }
         },
         setLast: (value) => {
+            if (!storage) return;
             try {
-                window.sessionStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
+                storage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
             } catch (e) { console.error("Cache write last error:", e); }
         },
         clearLast: () => {
+            if (!storage) return;
             try {
-                window.sessionStorage.removeItem(LAST_RECIPE_KEY);
+                storage.removeItem(LAST_RECIPE_KEY);
             } catch (e) { console.error("Cache clear last error:", e); }
         }
     };
