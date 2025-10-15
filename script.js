@@ -248,17 +248,40 @@ const cacheService = {
     }
 
     /** Muestra un banner de notificación temporal. */
-    function showNotification(message) {
-        if (!message) return;
-        DOMElements.notificationMessage.textContent = message;
-        DOMElements.notificationBanner.classList.remove('hidden');
-        DOMElements.notificationBanner.classList.add('animate-slide-down');
-        
-        setTimeout(() => {
-            DOMElements.notificationBanner.classList.add('hidden');
-            DOMElements.notificationBanner.classList.remove('animate-slide-down');
-        }, 8000);
+function showNotification(messageOrObject) {
+    // --- INICIO DE LA CORRECCIÓN ---
+    if (!messageOrObject) return;
+
+    let content, type;
+    
+    // Primero, revisa si lo que llega es un texto simple (para que no se rompan otras notificaciones)
+    // o si es el nuevo objeto que envía el servidor.
+    if (typeof messageOrObject === 'string') {
+        content = messageOrObject;
+        type = 'text';
+    } else {
+        content = messageOrObject.content; // Extrae el contenido del objeto
+        type = messageOrObject.type || 'text'; // Extrae el tipo del objeto
     }
+
+    if (!content) return;
+
+    // Ahora, dependiendo del tipo, lo muestra como HTML o como texto.
+    if (type === 'html') {
+        DOMElements.notificationMessage.innerHTML = content;
+    } else {
+        DOMElements.notificationMessage.textContent = content;
+    }
+    // --- FIN DE LA CORRECCIÓN ---
+
+    DOMElements.notificationBanner.classList.remove('hidden');
+    DOMElements.notificationBanner.classList.add('animate-slide-down');
+    
+    setTimeout(() => {
+        DOMElements.notificationBanner.classList.add('hidden');
+        DOMElements.notificationBanner.classList.remove('animate-slide-down');
+    }, 8000);
+}
 
     /** Renderiza el componente LocationStatus */
     function renderLocationStatus() {
@@ -1361,3 +1384,4 @@ initDOMElements();
 initialize();
 mostrarUltimoAnalisis();
 });
+
