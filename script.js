@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', () => {
         "Calculando los costos locales...",
         "¡Casi listo! Dando los toques finales...",
     ];
-    // CORRECCIÓN A MINÚSCULAS: Se cambiaron los valores para coincidir con la lógica estricta del backend (get_status, analyze, etc.)
     const ApiAction = {
         GET_STATUS: 'get_status', 
         ANALYZE: 'analyze',
@@ -50,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
         location: null,
         locationError: null,
         cameraStream: null,
-        // Nuevo estado para la lista de ingredientes marcados
         checkedIngredients: []
     };
 
@@ -58,10 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // === REFERENCIAS A ELEMENTOS DEL DOM ===
     // =====================================================================
     
-    // Objeto vacío para almacenar las referencias del DOM
     const DOMElements = {};
     
-    /** * @description Inicializa las referencias a los elementos del DOM. */
     function initDOMElements() {
         DOMElements.uploadView = document.getElementById('view-upload');
         DOMElements.loadingView = document.getElementById('view-loading');
@@ -113,102 +109,77 @@ document.addEventListener('DOMContentLoaded', () => {
     // === SERVICIOS (API, Cache, etc.) ===
     // =====================================================================
 
-// =====================================================================
-// === SERVICIO DE CACHE (SIMPLIFICADO Y FIABLE) ===
-// =====================================================================
-const cacheService = {
-    get: (key) => {
-        try {
-            const item = localStorage.getItem(key);
-            return item ? JSON.parse(item) : null;
-        } catch (e) {
-            console.error("Cache read error:", e);
-            return null;
+    const cacheService = {
+        get: (key) => {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : null;
+            } catch (e) {
+                console.error("Cache read error:", e);
+                return null;
+            }
+        },
+        set: (key, value) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+            } catch (e) {
+                console.error("Cache write error:", e);
+            }
+        },
+        getLast: () => {
+            try {
+                const item = localStorage.getItem(LAST_RECIPE_KEY);
+                return item ? JSON.parse(item) : null;
+            } catch (e) {
+                console.error("Cache read last error:", e);
+                return null;
+            }
+        },
+        setLast: (value) => {
+            try {
+                localStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
+            } catch (e) {
+                console.error("Cache write last error:", e);
+            }
+        },
+        clearLast: () => {
+            try {
+                localStorage.removeItem(LAST_RECIPE_KEY);
+            } catch (e) {
+                console.error("Cache clear last error:", e);
+            }
         }
-    },
-    set: (key, value) => {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch (e) {
-            console.error("Cache write error:", e);
-        }
-    },
-    getLast: () => {
-        try {
-            const item = localStorage.getItem(LAST_RECIPE_KEY);
-            return item ? JSON.parse(item) : null;
-        } catch (e) {
-            console.error("Cache read last error:", e);
-            return null;
-        }
-    },
-    setLast: (value) => {
-        try {
-            localStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
-        } catch (e) {
-            console.error("Cache write last error:", e);
-        }
-    },
-    clearLast: () => {
-        try {
-            localStorage.removeItem(LAST_RECIPE_KEY);
-        } catch (e) {
-            console.error("Cache clear last error:", e);
-        }
-    }
-};
+    };
 
-
-    /**
-     * @description Realiza una llamada a la Google Web App (Apps Script).
-     * @param {string} action - La acción a ejecutar en el backend.
-     * @param {object} payload - Los datos a enviar al backend.
-     * @returns {Promise<object>}
-     */
     async function callWebApp(action, payload) {
-        // CORRECCIÓN: Estructura del payload enviada al backend
         const debugPayload = { action, ...payload }; 
-        
         try {
-            // CORRECCIÓN CLAVE: No especificar Content-Type para evitar redirección CORS (302).
             const response = await fetch(GOOGLE_WEB_APP_URL, {
                 method: 'POST',
                 mode: 'cors',
                 credentials: 'omit',
                 body: JSON.stringify(debugPayload),
             });
-
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.statusText}`);
             }
-
             const text = await response.text();
-            
-            // Intenta parsear la respuesta como JSON
             let result;
             try {
                 result = JSON.parse(text);
             } catch (e) {
-                // Si el backend devuelve HTML/texto de error, manejarlo como fallo de comunicación
                 console.error(`Error: La respuesta para la acción ${action} no es un JSON válido.`, text);
                 return { success: false, message: 'Respuesta inválida del servidor. Revisa el script de Google Apps.', rawResponse: text };
             }
-
-            // Si el backend devuelve un error de lógica, lo mostramos en la consola junto con la acción
             if (result.success === false) {
                  console.error(`API Logic Error for action ${action}:`, result.message);
             }
-
-            // Mapeo por compatibilidad con el backend
             if (result.status && typeof result.status.adCount !== 'undefined') {
                 result.status.rewardedUsedToday = result.status.adCount;
                 delete result.status.adCount;
             }
-
             return result;
-
         } catch (error) {
-            // Error de red o comunicación (TypeError: Failed to fetch)
             console.error(`API Communication Error for action ${action} (Network/Fetch failure):`, error);
             const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
             return { success: false, message: `API Communication Error: ${errorMessage}` };
@@ -219,17 +190,12 @@ const cacheService = {
     // === FUNCIONES DE RENDERIZADO Y MANIPULACIÓN DEL DOM ===
     // =====================================================================
 
-    /**
-     * Updates the main view of the application.
-     * @param {'upload' | 'loading' | 'results'} newView The view to display.
-     */
     function updateView(newView) {
         state.view = newView;
         DOMElements.uploadView.classList.toggle('hidden', newView !== 'upload');
         DOMElements.loadingView.classList.toggle('hidden', newView !== 'loading');
         DOMElements.resultsView.classList.toggle('hidden', newView !== 'results');
         
-        // Banner and loading message logic
         if (newView === 'upload') {
             window.androidApp?.showBannerAd?.();
             if (state.loadingMessageInterval) clearInterval(state.loadingMessageInterval);
@@ -247,47 +213,32 @@ const cacheService = {
         }
     }
 
-    /** Muestra un banner de notificación temporal. */
-function showNotification(messageOrObject) {
-    // --- INICIO DE LA CORRECCIÓN ---
-    if (!messageOrObject) return;
+    /** Muestra un banner de notificación que permanece visible hasta que el usuario lo cierra. */
+    function showNotification(messageOrObject) {
+        if (!messageOrObject) return;
 
-    let content, type;
-    
-    // Primero, revisa si lo que llega es un texto simple (para que no se rompan otras notificaciones)
-    // o si es el nuevo objeto que envía el servidor.
-    if (typeof messageOrObject === 'string') {
-        content = messageOrObject;
-        type = 'text';
-    } else {
-        content = messageOrObject.content; // Extrae el contenido del objeto
-        type = messageOrObject.type || 'text'; // Extrae el tipo del objeto
+        let content, type;
+        
+        if (typeof messageOrObject === 'string') {
+            content = messageOrObject;
+            type = 'text';
+        } else {
+            content = messageOrObject.content;
+            type = messageOrObject.type || 'text';
+        }
+
+        if (!content) return;
+
+        if (type === 'html') {
+            DOMElements.notificationMessage.innerHTML = content;
+        } else {
+            DOMElements.notificationMessage.textContent = content;
+        }
+        
+        DOMElements.notificationBanner.classList.remove('hidden');
+        DOMElements.notificationBanner.classList.add('animate-slide-down');
     }
 
-    if (!content) return;
-
-    // Ahora, dependiendo del tipo, lo muestra como HTML o como texto.
-    if (type === 'html') {
-        DOMElements.notificationMessage.innerHTML = content;
-    } else {
-        DOMElements.notificationMessage.textContent = content;
-    }
-    // --- FIN DE LA CORRECCIÓN ---
-
-    DOMElements.notificationBanner.classList.remove('hidden');
-    DOMElements.notificationBanner.classList.add('animate-slide-down');
-    
-    // ELIMINAMOS ESTE BLOQUE DE CÓDIGO
-    /*
-    setTimeout(() => {
-        DOMElements.notificationBanner.classList.add('hidden');
-        DOMElements.notificationBanner.classList.remove('animate-slide-down');
-    }, 8000);
-    */
-   // --- FIN DE LA MODIFICACIÓN ---
-}
-
-    /** Renderiza el componente LocationStatus */
     function renderLocationStatus() {
         let statusText = "Obteniendo ubicación para precios locales...";
         let icon = '🔄';
@@ -308,7 +259,6 @@ function showNotification(messageOrObject) {
         DOMElements.locationStatus.innerHTML = `<span class="mr-1">${icon}</span><span class="truncate">${statusText}</span>`;
     }
 
-    /** Renderiza el componente StatusTracker */
     function renderStatusTracker() {
         if (!state.userStatus) {
             DOMElements.statusTracker.innerHTML = '';
@@ -347,7 +297,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Renderiza la tarjeta de oferta especial. */
     function renderSpecialOfferCard() {
         const offers = [
             { image: "https://images.unsplash.com/photo-1518843875459-f738682238a6?q=80&w=2070&auto=format&fit=crop", title: "¡Conviértete en Chef Pro!", description: "Accede a funciones exclusivas y análisis ilimitados.", buttonText: "Ver Planes Pro", buttonClass: "bg-teal-500 hover:bg-teal-400" },
@@ -389,7 +338,6 @@ function showNotification(messageOrObject) {
         startCarousel();
     }
 
-    /** Renderiza el manejador de imagen o el input de ingredientes. */
     function renderAnalysisMode() {
         if (state.analysisMode === 'photo') {
             DOMElements.analysisModeContainer.innerHTML = state.imageBase64
@@ -429,7 +377,6 @@ function showNotification(messageOrObject) {
         addAnalysisModeEventListeners();
     }
 
-    /** Renderiza el botón principal de análisis. */
     function renderAnalyzeButton() {
         let text = '', disabled = true, showLoader = false;
         
@@ -437,7 +384,7 @@ function showNotification(messageOrObject) {
             showLoader = true;
             disabled = true;
         } else if (!state.userStatus) {
-            text = 'Cargando...'; // Estado inicial mientras se obtiene el status
+            text = 'Cargando...';
         } else {
             const isInputReady = state.analysisMode === 'photo' ? !!state.imageBase64 : !!state.ingredientsText.trim();
             if (!isInputReady) {
@@ -447,7 +394,7 @@ function showNotification(messageOrObject) {
                 if (state.analysisMode === 'ingredients') {
                     disabled = false;
                     text = isBonusActive ? 'Usar Bono' : 'Desbloquear con Anuncio';
-                } else { // Photo mode
+                } else {
                     const hasFreeUses = freeCount < freeLimit;
                     if (hasFreeUses) {
                         text = 'Generar Receta';
@@ -474,7 +421,6 @@ function showNotification(messageOrObject) {
         }
     }
     
-    /** Recalcula el costo total de la receta excluyendo los ingredientes seleccionados. */
     function updateTotalCost() {
         if (!state.recipe) return;
 
@@ -485,18 +431,14 @@ function showNotification(messageOrObject) {
         ingredientsList.forEach((item, index) => {
             const checkbox = item.querySelector('input[type="checkbox"]');
             
-            // Actualizar el estado local de los ingredientes marcados
             state.checkedIngredients[index] = checkbox.checked;
             
-            // Si el checkbox NO está marcado, sumamos el precio (es decir, el usuario NO tiene el ingrediente)
             if (checkbox && !checkbox.checked) {
                 const price = parseFloat(checkbox.getAttribute('data-price')) || 0;
                 runningTotal += price;
-                // Ajustar estilos para indicar que debe comprar
                 item.classList.remove('bg-gray-50');
                 item.querySelector('label').classList.remove('line-through', 'opacity-60');
             } else {
-                 // Ajustar estilos para indicar que ya tiene
                 item.classList.add('bg-gray-50');
                 item.querySelector('label').classList.add('line-through', 'opacity-60');
             }
@@ -505,15 +447,12 @@ function showNotification(messageOrObject) {
         const totalElement = DOMElements.resultsView.querySelector('#current-total-cost');
         if (totalElement) {
             totalElement.textContent = runningTotal.toFixed(2);
-            // Si el costo es 0, ocultamos el código de moneda, sino lo mostramos.
             DOMElements.resultsView.querySelector('#total-currency-code').textContent = runningTotal > 0 ? currencyCode : '';
         }
         
-        // **CORRECCIÓN:** Actualizar el módulo de compartir con el nuevo costo
         renderShareModule(runningTotal);
     }
 
-    /** Renderiza el contenido de la vista de resultados */
     function renderResultsView() {
         if (state.error && !state.recipe) {
             DOMElements.resultsView.innerHTML = `
@@ -539,12 +478,10 @@ function showNotification(messageOrObject) {
         
         const { dishName, preparationTime, difficulty, calories, ingredients, instructions, platingSuggestions, supermarketSuggestions, currencyCode } = state.recipe;
         
-        // Inicializar checkedIngredients si es la primera vez que se renderiza esta receta
         if (state.checkedIngredients.length !== ingredients.length || state.isRemixing) {
             state.checkedIngredients = Array(ingredients.length).fill(false);
         }
 
-        // 1. **CORRECCIÓN** Definir totalCost aquí para su uso local
         const initialTotalCost = ingredients.reduce((acc, ing) => acc + (ing.estimatedLocalPrice || 0), 0);
 
         const remixMessage = (() => {
@@ -569,7 +506,6 @@ function showNotification(messageOrObject) {
                 <ul class="space-y-2" id="ingredients-list">
                     ${ingredients.map((ing, index) => `
                         <li class="ingredient-item grid grid-cols-[auto_1fr_auto] items-start gap-3 bg-white p-3 rounded-lg border shadow-sm transition-all duration-200 hover:bg-gray-50 ${state.checkedIngredients[index] ? 'bg-gray-50' : ''}">
-                            <!-- El precio se adjunta al checkbox para el cálculo -->
                             <input type="checkbox" id="ing-check-${index}" class="mt-1 w-5 h-5 text-brand-orange bg-gray-100 border-gray-300 rounded focus:ring-brand-orange checked:bg-brand-orange/90 cursor-pointer" 
                                 data-price="${ing.estimatedLocalPrice || 0}"
                                 ${state.checkedIngredients[index] ? 'checked' : ''}
@@ -648,8 +584,7 @@ function showNotification(messageOrObject) {
         renderShareModule(initialTotalCost);
         addResultsEventListeners();
         
-        // Ejecutar cálculo de costo inicial y agregar listeners
-        updateTotalCost(); // Debe llamarse para establecer el costo restante inicial
+        updateTotalCost();
         DOMElements.resultsView.querySelectorAll('.ingredient-item input[type="checkbox"]').forEach(checkbox => {
             checkbox.addEventListener('change', updateTotalCost);
         });
@@ -668,7 +603,7 @@ function showNotification(messageOrObject) {
                  <p class="text-center text-sm font-semibold text-gray-500">Compartir Receta</p>
                  <div class="flex flex-col sm:flex-row gap-3">
                     <button id="copy-recipe-btn" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md bg-gray-200 text-gray-800 hover:bg-gray-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5 .124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" /></svg>
                         <span>Copiar</span>
                     </button>
                     <button id="whatsapp-share-btn" class="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md bg-[#25D366] text-white hover:bg-[#128C7E]">
@@ -681,17 +616,13 @@ function showNotification(messageOrObject) {
         document.getElementById('whatsapp-share-btn').addEventListener('click', () => handleShare('whatsapp', totalCost));
     }
 
-    /** Renderiza el loader SVG animado. */
     function renderLoader(containerId, isWhite = false) {
         const container = document.getElementById(containerId);
         if(!container) return;
 
         const animations = [
-            // Pot Animation
             `<svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><path class="steam steam-1 ${isWhite ? 'white': ''}" d="M40 45 Q 42 35, 40 25" fill="none" /><path class="steam steam-2 ${isWhite ? 'white': ''}" d="M50 45 Q 52 35, 50 25" fill="none" /><path class="steam steam-3 ${isWhite ? 'white': ''}" d="M60 45 Q 58 35, 60 25" fill="none" /><path d="M20 50 H 80 V 80 A 10 10 0 0 1 70 90 H 30 A 10 10 0 0 1 20 80 Z" fill="#E5E7EB" /><path d="M22 55 H 78 V 80 A 8 8 0 0 1 70 88 H 30 A 8 8 0 0 1 22 80 Z" fill="#F3F4F6" /><circle cx="15" cy="60" r="5" fill="#D1D5DB" /><circle cx="85" cy="60" r="5" fill="#D1D5DB" /><g class="pot-lid"><path d="M30 48 C 30 42, 70 42, 70 48" fill="#E5E7EB" /><circle cx="50" cy="40" r="4" fill="#D1D5DB" /></g></svg>`,
-            // Wok Animation
             `<svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g><path class="flame flame-1 ${isWhite ? 'white': ''}" d="M45,95 C 40,85 50,80 50,95 Z" /><path class="flame flame-2 ${isWhite ? 'white': ''}" d="M50,95 C 45,80 55,75 55,95 Z" /><path class="flame flame-3 ${isWhite ? 'white': ''}" d="M55,95 C 50,85 60,80 60,95 Z" /></g><g class="wok-group"><path d="M25 70 C 40 90, 60 90, 75 70 L 85 60 L 15 60 Z" fill="#6B7280" /><path d="M28 69 C 40 85, 60 85, 72 69 L 80 62 L 20 62 Z" fill="#9CA3AF" /><rect x="0" y="56" width="20" height="8" rx="4" fill="#4B5563" /><rect x="0" y="56" width="20" height="8" rx="4" fill="#4B5563" /><g><rect class="food-particle food1" x="45" y="60" width="5" height="5" rx="2" fill="#34D399" /><circle class="food-particle food2" cx="55" cy="62" r="3" fill="#F87171" /><rect class="food-particle food3" x="60" y="58" width="6" height="4" rx="2" fill="#FBBF24" /></g></g></svg>`,
-            // Shaker Animation
             `<svg class="w-24 h-24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g class="shaker shaker-salt" transform="translate(-15, 0)"><rect x="25" y="40" width="20" height="35" rx="5" fill="#F3F4F6" /><rect x="25" y="35" width="20" height="5" rx="2" fill="#D1D5DB" /><circle class="particle p1 ${isWhite ? 'white': ''}" cx="35" cy="45" r="1.5" /><circle class="particle p2 ${isWhite ? 'white': ''}" cx="32" cy="45" r="1.5" /><circle class="particle p3 ${isWhite ? 'white': ''}" cx="38" cy="45" r="1.5" /></g><g class="shaker shaker-pepper" transform="translate(15, 0)"><rect x="55" y="40" width="20" height="35" rx="5" fill="#E5E7EB" /><rect x="55" y="35" width="20" height="5" rx="2" fill="#9CA3AF" /><circle class="particle p4 ${isWhite ? 'white': ''}" cx="65" cy="45" r="1.5" /><circle class="particle p5 ${isWhite ? 'white': ''}" cx="62" cy="45" r="1.5" /><circle class="particle p6 ${isWhite ? 'white': ''}" cx="68" cy="45" r="1.5" /></g></svg>`
         ];
         let animationIndex = 0;
@@ -729,7 +660,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Muestra y configura el modal de límite/premium. */
     function showLimitModal(context) {
         state.premiumModalContext = context;
         if (!context || !state.userStatus) return;
@@ -760,7 +690,6 @@ function showNotification(messageOrObject) {
         DOMElements.limitModalActions.innerHTML = actionsHTML;
         DOMElements.limitModal.classList.remove('hidden');
 
-        // Add event listeners for new buttons
         const confirmBtn = document.getElementById('limit-modal-confirm');
         const watchAdBtn = document.getElementById('limit-modal-watch-ad');
         const closeBtn = document.getElementById('limit-modal-close');
@@ -779,7 +708,6 @@ function showNotification(messageOrObject) {
     // === LÓGICA DE LA APLICACIÓN Y MANEJADORES DE EVENTOS ===
     // =====================================================================
 
-    /** Obtiene el ID de visitante (fingerprint). */
     async function getVisitorId() {
         if (typeof window.FingerprintJS === 'undefined') {
             console.error("FingerprintJS library not loaded yet.");
@@ -797,7 +725,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Obtiene la geolocalización del usuario. */
     function getLocation() {
         if (!navigator.geolocation) {
             state.locationError = "La geolocalización no es compatible.";
@@ -823,7 +750,6 @@ function showNotification(messageOrObject) {
         );
     }
 
-    /** Obtiene el estado del usuario desde la API. */
     async function fetchUserStatus() {
         if (!state.visitorId) return;
         try {
@@ -832,7 +758,7 @@ function showNotification(messageOrObject) {
                 state.userStatus = result.status;
             } else {
                 console.error("Failed to fetch user status:", result.message);
-                state.userStatus = null; // o un estado de error
+                state.userStatus = null;
             }
         } catch (err) {
             console.error("Failed to fetch user status:", err);
@@ -842,7 +768,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Revisa si hay mensajes nuevos para el usuario. */
     async function checkMessages() {
         if (!state.visitorId) return;
         const result = await callWebApp(ApiAction.CHECK_MESSAGES, { userId: state.visitorId });
@@ -854,7 +779,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Maneja la lógica principal de análisis (foto o ingredientes). */
     async function callAnalysisApi() {
         if (!state.visitorId) return;
         if (state.analysisMode === 'photo' && !state.imageBase64) return;
@@ -870,7 +794,6 @@ function showNotification(messageOrObject) {
             if (cacheKey && cacheService.get(cacheKey)) {
                 state.recipe = cacheService.get(cacheKey);
                 cacheService.setLast(state.recipe);
-                // Si viene del cache, inicializa los checkedIngredients con valores por defecto
                 state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
                 renderResultsView();
                 updateView('results');
@@ -888,7 +811,6 @@ function showNotification(messageOrObject) {
                 state.recipe = result.data;
                 if (cacheKey) cacheService.set(cacheKey, result.data);
                 cacheService.setLast(result.data);
-                // Inicializa el estado de los checkboxes para la nueva receta
                 state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false); 
                 renderResultsView();
                 updateView('results');
@@ -909,7 +831,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Decide si se puede realizar el análisis y llama a la API. */
     function handleAnalysisRequest() {
         if (!state.userStatus || state.view === 'loading') return;
 
@@ -920,7 +841,7 @@ function showNotification(messageOrObject) {
             } else {
                 showLimitModal('extra_analysis');
             }
-        } else { // 'ingredients' mode
+        } else {
             if (state.userStatus.isBonusActive) {
                 callAnalysisApi();
             } else {
@@ -929,7 +850,6 @@ function showNotification(messageOrObject) {
         }
     }
     
-    /** Cambia el modo de análisis entre 'foto' e 'ingredientes'. */
     function switchAnalysisMode(mode) {
         state.analysisMode = mode;
         DOMElements.modePhotoBtn.classList.toggle('bg-white', mode === 'photo');
@@ -958,7 +878,6 @@ function showNotification(messageOrObject) {
         }
     }
 
-    /** Maneja el reclamo de un bono por ver un anuncio. */
     async function handleClaimBonus() {
         if (!state.visitorId) return;
         try {
@@ -980,7 +899,6 @@ function showNotification(messageOrObject) {
         }
     }
     
-    /** Maneja la remezcla de una receta. */
     async function handleRemix(remixType) {
         if (!state.recipe || state.isRemixing || !state.visitorId || !state.userStatus) return;
 
@@ -994,7 +912,7 @@ function showNotification(messageOrObject) {
         if (cachedRemix) {
             state.recipe = cachedRemix;
             cacheService.setLast(cachedRemix);
-            state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false); // Resetear checked ingredients
+            state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
             renderResultsView();
             return;
         }
@@ -1002,7 +920,7 @@ function showNotification(messageOrObject) {
         state.isRemixing = true;
         state.currentRemixType = remixType;
         state.error = null;
-        renderResultsView(); // Re-render to show loader
+        renderResultsView();
 
         try {
             const payload = { recipe: state.recipe, remixType, userId: state.visitorId };
@@ -1011,7 +929,7 @@ function showNotification(messageOrObject) {
                 state.recipe = result.data;
                 cacheService.set(cacheKey, result.data);
                 cacheService.setLast(result.data);
-                state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false); // Resetear checked ingredients
+                state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
             } else {
                 state.error = result.message || 'Error desconocido durante el remix.';
             }
@@ -1021,14 +939,14 @@ function showNotification(messageOrObject) {
         } finally {
             state.isRemixing = false;
             state.currentRemixType = null;
-            renderResultsView(); // Re-render with new recipe or error
+            renderResultsView();
         }
     }
 
     function returnToHome() {
         window.androidApp?.showInterstitialAd?.();
         updateView('upload');
-mostrarUltimoAnalisis();
+        mostrarUltimoAnalisis();
         fetchUserStatus();
     }
 
@@ -1076,10 +994,8 @@ mostrarUltimoAnalisis();
     }
 
     function handleShare(platform, totalCost) {
-        // Obtenemos el costo actual mostrado en la UI
         const currentTotalElement = DOMElements.resultsView.querySelector('#current-total-cost');
-        const currentTotal = currentTotalElement ? parseFloat(currentTotalElement.textContent) : totalCost; // Usar el total pasado por argumento si no se encuentra en el DOM
-
+        const currentTotal = currentTotalElement ? parseFloat(currentTotalElement.textContent) : totalCost;
 
         const generateText = (isWhatsapp) => {
             const title = (text) => isWhatsapp ? `*${text}*` : text.toUpperCase();
@@ -1124,7 +1040,6 @@ mostrarUltimoAnalisis();
         }
     }
 
-    // --- Lógica de la Cámara ---
     async function startCameraStream(mode) {
         if (state.cameraStream) {
             state.cameraStream.getTracks().forEach(track => track.stop());
@@ -1183,7 +1098,6 @@ mostrarUltimoAnalisis();
         }
     }
 
-    // --- Manejadores de Modales ---
     function handleLimitModalConfirm() {
         closeLimitModal();
         if (state.premiumModalContext === 'remix') {
@@ -1197,8 +1111,6 @@ mostrarUltimoAnalisis();
         if (window.androidApp?.showRewardedVideo) {
             window.androidApp.showRewardedVideo();
         } else {
-            // Nota: Aquí no se puede usar alert() en el entorno de Canvas, pero se mantiene
-            // para el contexto de desarrollo del usuario si no está en el app móvil.
             console.warn("La función de bonos solo está disponible en la aplicación móvil.");
             showNotification("La función de bonos solo está disponible en la aplicación móvil.");
         }
@@ -1208,7 +1120,6 @@ mostrarUltimoAnalisis();
     // === INICIALIZACIÓN Y EVENT LISTENERS ===
     // =====================================================================
 
-    /** Añade los event listeners para la vista de upload. */
     function addAnalysisModeEventListeners() {
         const resetBtn = document.getElementById('reset-image-btn');
         const openCameraBtn = document.getElementById('open-camera-btn');
@@ -1228,23 +1139,39 @@ mostrarUltimoAnalisis();
 
     /** Añade los event listeners para la vista de resultados. */
     function addResultsEventListeners() {
-        document.getElementById('return-home-btn').addEventListener('click', returnToHome);
-        document.getElementById('save-recipe-btn').addEventListener('click', () => DOMElements.premiumSaveModal.classList.remove('hidden'));
-        document.getElementById('remix-quick-btn').addEventListener('click', () => handleRemix('quick'));
-        document.getElementById('remix-healthy-btn').addEventListener('click', () => handleRemix('healthy'));
-        document.getElementById('remix-spicy-btn').addEventListener('click', () => handleRemix('spicy'));
+        // Se busca cada botón y solo si se encuentra (!= null), se le añade el listener.
+        const returnBtn = document.getElementById('return-home-btn');
+        if (returnBtn) {
+            returnBtn.addEventListener('click', returnToHome);
+        }
+
+        const saveBtn = document.getElementById('save-recipe-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.remove('hidden'));
+        }
+
+        const quickBtn = document.getElementById('remix-quick-btn');
+        if (quickBtn) {
+            quickBtn.addEventListener('click', () => handleRemix('quick'));
+        }
+
+        const healthyBtn = document.getElementById('remix-healthy-btn');
+        if (healthyBtn) {
+            healthyBtn.addEventListener('click', () => handleRemix('healthy'));
+        }
+        
+        const spicyBtn = document.getElementById('remix-spicy-btn');
+        if (spicyBtn) {
+            spicyBtn.addEventListener('click', () => handleRemix('spicy'));
+        }
     }
 
-    /** Función que añade todos los listeners que dependen de DOMElements. */
     function addStaticListeners() {
-        // Notificaciones
         DOMElements.notificationCloseBtn.addEventListener('click', () => DOMElements.notificationBanner.classList.add('hidden'));
         
-        // Modos de análisis (Event Delegation ya cubre los botones internos)
         DOMElements.modePhotoBtn.addEventListener('click', () => switchAnalysisMode('photo'));
         DOMElements.modeIngredientsBtn.addEventListener('click', () => switchAnalysisMode('ingredients'));
         
-        // Tarjeta de Última Receta
         DOMElements.showLastRecipeBtn.addEventListener('click', () => {
             if(state.recipe) {
                 renderResultsView();
@@ -1252,19 +1179,14 @@ mostrarUltimoAnalisis();
             }
         });
 
-        // Menú Modal
         DOMElements.headerLogoBtn.addEventListener('click', () => DOMElements.menuModal.classList.remove('hidden'));
         DOMElements.menuModal.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
         
-        // Evitar que el clic en el modal lo cierre (se hace con el primer hijo del modal)
-        // Ya se verificó la existencia en el cuerpo del documento, pero lo reaseguramos aquí:
         if (DOMElements.menuModal.firstElementChild) {
             DOMElements.menuModal.firstElementChild.addEventListener('click', e => e.stopPropagation()); 
         }
         DOMElements.menuModalCloseBtn.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
 
-
-        // Listeners del header y modales
         DOMElements.headerNotificationBtn.addEventListener('click', () => {
             if (state.unreadMessage) {
                 showNotification(state.unreadMessage);
@@ -1273,19 +1195,14 @@ mostrarUltimoAnalisis();
             }
         });
 
-        // Modales de Límite (Dejamos los listeners dentro de showLimitModal para asegurar el target correcto)
-        
-        // Modales de Guardado 
         DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
         DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
 
         DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        // Evitar que el clic en el modal lo cierre (se hace con el primer hijo del modal)
         if (DOMElements.premiumSaveModal.firstElementChild) {
             DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
         }
         
-        // Listeners de simulación y política
         DOMElements.simulateAdBtn.addEventListener('click', () => {
             if (window.handleAdReward) {
                 console.log("Simulating successful rewarded ad...");
@@ -1298,7 +1215,6 @@ mostrarUltimoAnalisis();
         DOMElements.privacyPolicyBtn.addEventListener('click', () => showNotification('Política de Privacidad (Próximamente)'));
         DOMElements.updatesBtn.addEventListener('click', () => showNotification('Buscando actualizaciones... (Próximamente)'));
         
-        // Camera Modal listeners
         DOMElements.cameraCancelBtn.addEventListener('click', closeCamera);
         DOMElements.cameraCaptureBtn.addEventListener('click', handleCameraCapture);
         DOMElements.cameraSwitchBtn.addEventListener('click', () => {
@@ -1307,55 +1223,43 @@ mostrarUltimoAnalisis();
         });
     }
 
-    /** Función de inicialización principal. */
     async function initialize() {
-        // 1. Inicializa las referencias del DOM (necesario antes de usarlas)
         initDOMElements(); 
         
-        // 2. Ocultar Intro
         setTimeout(() => {
             DOMElements.introOverlay.style.opacity = '0';
             setTimeout(() => DOMElements.introOverlay.classList.add('hidden'), 1000);
         }, 3000);
         
-        // 3. Cargar última receta antes del render inicial (FLUJO DE CACHÉ CORREGIDO)
         const lastRecipe = cacheService.getLast();
         if (lastRecipe) {
             state.recipe = lastRecipe;
-            // Inicializa el estado de los checkboxes para la receta del caché (todos desmarcados por defecto)
             state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
             
-            // **CORRECCIÓN CLAVE:** Activar la visibilidad y el nombre de la tarjeta inmediatamente
-            // ¡Esta es la corrección que asegura que la tarjeta se muestre si los elementos existen!
             if (DOMElements.lastRecipeCard && DOMElements.lastRecipeName) {
                 DOMElements.lastRecipeCard.classList.remove('hidden');
                 DOMElements.lastRecipeName.textContent = lastRecipe.dishName;
             }
         }
 
-        // 4. Renderizar componentes estáticos/iniciales
         DOMElements.appVersion.textContent = `Versión ${APP_VERSION}`;
         renderLoader('loader-animation-container');
         renderLoader('camera-loader', true);
         renderLocationStatus();
         renderSpecialOfferCard();
         renderAnalysisMode();
-        renderAnalyzeButton(); // Render inicial con "Cargando..."
+        renderAnalyzeButton();
 
-        // 5. Agregar todos los listeners estáticos que dependen de DOMElements
         addStaticListeners();
 
-        // 6. Cargar datos iniciales de forma ASÍNCRONA (NO BLOQUEANTE)
         await getVisitorId();
         getLocation();
-        await fetchUserStatus(); // Esperar a que el status inicial se cargue
+        await fetchUserStatus();
         
-        // 7. Mensajes
         checkMessages();
         setInterval(checkMessages, 30000);
     }
 
-    // Definir función global para que la app Android pueda llamarla
     window.handleAdReward = (wasSuccessful, message) => {
         if (wasSuccessful) {
             handleClaimBonus();
@@ -1364,29 +1268,22 @@ mostrarUltimoAnalisis();
             showNotification("No se pudo obtener el bono del anuncio.");
         }
     };
- // =====================================================================
-// === MOSTRAR EL ÚLTIMO ANÁLISIS GUARDADO EN LA PÁGINA PRINCIPAL ===
-// =====================================================================
-function mostrarUltimoAnalisis() {
-    const lastRecipe = cacheService.getLast();
-    if (!lastRecipe) return; // No hay análisis previo
 
-    // Mostrar tarjeta “Ver Última Receta”
-    DOMElements.lastRecipeCard.classList.remove('hidden');
-    DOMElements.lastRecipeName.textContent = lastRecipe.dishName || "Receta anterior";
+    function mostrarUltimoAnalisis() {
+        const lastRecipe = cacheService.getLast();
+        if (!lastRecipe) return;
 
-    // Al hacer clic, mostrar la vista de resultados guardada
-    DOMElements.showLastRecipeBtn.addEventListener('click', () => {
-        state.recipe = lastRecipe;
-        updateView('results');
-        renderResultsView();
-    });
-}
+        DOMElements.lastRecipeCard.classList.remove('hidden');
+        DOMElements.lastRecipeName.textContent = lastRecipe.dishName || "Receta anterior";
 
-// Inicializar DOM y luego mostrar la última receta (solo si existe)
-initDOMElements();
-initialize();
-mostrarUltimoAnalisis();
+        DOMElements.showLastRecipeBtn.addEventListener('click', () => {
+            state.recipe = lastRecipe;
+            updateView('results');
+            renderResultsView();
+        });
+    }
+
+    initDOMElements();
+    initialize();
+    mostrarUltimoAnalisis();
 });
-
-
