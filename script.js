@@ -277,10 +277,14 @@ function showNotification(messageOrObject) {
     DOMElements.notificationBanner.classList.remove('hidden');
     DOMElements.notificationBanner.classList.add('animate-slide-down');
     
+    // ELIMINAMOS ESTE BLOQUE DE CÓDIGO
+    /*
     setTimeout(() => {
         DOMElements.notificationBanner.classList.add('hidden');
         DOMElements.notificationBanner.classList.remove('animate-slide-down');
     }, 8000);
+    */
+   // --- FIN DE LA MODIFICACIÓN ---
 }
 
     /** Renderiza el componente LocationStatus */
@@ -1384,4 +1388,5 @@ initDOMElements();
 initialize();
 mostrarUltimoAnalisis();
 });
+
 
