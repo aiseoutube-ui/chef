@@ -57,100 +57,107 @@ document.addEventListener('DOMContentLoaded', () => {
     // =====================================================================
     // === REFERENCIAS A ELEMENTOS DEL DOM ===
     // =====================================================================
-
-    const DOMElements = {
-        // Vistas principales
-        uploadView: document.getElementById('view-upload'),
-        loadingView: document.getElementById('view-loading'),
-        resultsView: document.getElementById('view-results'),
-        // Intro
-        introOverlay: document.getElementById('intro-overlay'),
-        // Header
-        headerLogoBtn: document.getElementById('header-logo-btn'),
-        headerNotificationBtn: document.getElementById('header-notification-btn'),
-        headerNotificationDot: document.getElementById('header-notification-dot'),
-        // Notificaciones
-        notificationBanner: document.getElementById('notification-banner'),
-        notificationMessage: document.getElementById('notification-message'),
-        notificationCloseBtn: document.getElementById('notification-close-btn'),
-        // Vista Upload
-        locationStatus: document.getElementById('location-status'),
-        statusTracker: document.getElementById('status-tracker'),
-        lastRecipeCard: document.getElementById('last-recipe-card'),
-        showLastRecipeBtn: document.getElementById('show-last-recipe-btn'),
-        lastRecipeName: document.getElementById('last-recipe-name'),
-        specialOfferCard: document.getElementById('special-offer-card'),
-        modePhotoBtn: document.getElementById('mode-photo-btn'),
-        modeIngredientsBtn: document.getElementById('mode-ingredients-btn'),
-        analysisModeContainer: document.getElementById('analysis-mode-container'),
-        analyzeButtonContainer: document.getElementById('analyze-button-container'),
-        // Vista Loading
-        loaderAnimationContainer: document.getElementById('loader-animation-container'),
-        loadingMessage: document.getElementById('loading-message'),
-        // Menu Modal
-        menuModal: document.getElementById('menu-modal'),
-        appVersion: document.getElementById('app-version'),
-        privacyPolicyBtn: document.getElementById('privacy-policy-btn'),
-        updatesBtn: document.getElementById('updates-btn'),
-        simulateAdBtn: document.getElementById('simulate-ad-btn'),
-        menuModalCloseBtn: document.getElementById('menu-modal-close-btn'),
-        // Limit/Premium Modal
-        limitModal: document.getElementById('limit-modal'),
-        limitModalIconContainer: document.getElementById('limit-modal-icon-container'),
-        limitModalIcon: document.getElementById('limit-modal-icon'),
-        limitModalTitle: document.getElementById('limit-modal-title'),
-        limitModalDescription: document.getElementById('limit-modal-description'),
-        limitModalActions: document.getElementById('limit-modal-actions'),
-        // Premium Save Modal
-        premiumSaveModal: document.getElementById('premium-save-modal'),
-        premiumSaveUpgradeBtn: document.getElementById('premium-save-upgrade-btn'),
-        premiumSaveCloseBtn: document.getElementById('premium-save-close-btn'),
-        // Camera Modal
-        cameraModal: document.getElementById('camera-modal'),
-        cameraVideo: document.getElementById('camera-video'),
-        cameraCanvas: document.getElementById('camera-canvas'),
-        cameraLoader: document.getElementById('camera-loader'),
-        cameraError: document.getElementById('camera-error'),
-        cameraCancelBtn: document.getElementById('camera-cancel-btn'),
-        cameraCaptureBtn: document.getElementById('camera-capture-btn'),
-        cameraSwitchBtn: document.getElementById('camera-switch-btn'),
-    };
+    
+    // Objeto vacío para almacenar las referencias del DOM
+    const DOMElements = {};
+    
+    /** * @description Inicializa las referencias a los elementos del DOM. */
+    function initDOMElements() {
+        DOMElements.uploadView = document.getElementById('view-upload');
+        DOMElements.loadingView = document.getElementById('view-loading');
+        DOMElements.resultsView = document.getElementById('view-results');
+        DOMElements.introOverlay = document.getElementById('intro-overlay');
+        DOMElements.headerLogoBtn = document.getElementById('header-logo-btn');
+        DOMElements.headerNotificationBtn = document.getElementById('header-notification-btn');
+        DOMElements.headerNotificationDot = document.getElementById('header-notification-dot');
+        DOMElements.notificationBanner = document.getElementById('notification-banner');
+        DOMElements.notificationMessage = document.getElementById('notification-message');
+        DOMElements.notificationCloseBtn = document.getElementById('notification-close-btn');
+        DOMElements.locationStatus = document.getElementById('location-status');
+        DOMElements.statusTracker = document.getElementById('status-tracker');
+        DOMElements.lastRecipeCard = document.getElementById('last-recipe-card');
+        DOMElements.showLastRecipeBtn = document.getElementById('show-last-recipe-btn');
+        DOMElements.lastRecipeName = document.getElementById('last-recipe-name');
+        DOMElements.specialOfferCard = document.getElementById('special-offer-card');
+        DOMElements.modePhotoBtn = document.getElementById('mode-photo-btn');
+        DOMElements.modeIngredientsBtn = document.getElementById('mode-ingredients-btn');
+        DOMElements.analysisModeContainer = document.getElementById('analysis-mode-container');
+        DOMElements.analyzeButtonContainer = document.getElementById('analyze-button-container');
+        DOMElements.loaderAnimationContainer = document.getElementById('loader-animation-container');
+        DOMElements.loadingMessage = document.getElementById('loading-message');
+        DOMElements.menuModal = document.getElementById('menu-modal');
+        DOMElements.appVersion = document.getElementById('app-version');
+        DOMElements.privacyPolicyBtn = document.getElementById('privacy-policy-btn');
+        DOMElements.updatesBtn = document.getElementById('updates-btn');
+        DOMElements.simulateAdBtn = document.getElementById('simulate-ad-btn');
+        DOMElements.menuModalCloseBtn = document.getElementById('menu-modal-close-btn');
+        DOMElements.limitModal = document.getElementById('limit-modal');
+        DOMElements.limitModalIcon = document.getElementById('limit-modal-icon');
+        DOMElements.limitModalTitle = document.getElementById('limit-modal-title');
+        DOMElements.limitModalDescription = document.getElementById('limit-modal-description');
+        DOMElements.limitModalActions = document.getElementById('limit-modal-actions');
+        DOMElements.premiumSaveModal = document.getElementById('premium-save-modal');
+        DOMElements.premiumSaveUpgradeBtn = document.getElementById('premium-save-upgrade-btn');
+        DOMElements.premiumSaveCloseBtn = document.getElementById('premium-save-close-btn');
+        DOMElements.cameraModal = document.getElementById('camera-modal');
+        DOMElements.cameraVideo = document.getElementById('camera-video');
+        DOMElements.cameraCanvas = document.getElementById('camera-canvas');
+        DOMElements.cameraLoader = document.getElementById('camera-loader');
+        DOMElements.cameraError = document.getElementById('camera-error');
+        DOMElements.cameraCancelBtn = document.getElementById('camera-cancel-btn');
+        DOMElements.cameraCaptureBtn = document.getElementById('camera-capture-btn');
+        DOMElements.cameraSwitchBtn = document.getElementById('camera-switch-btn');
+    }
 
     // =====================================================================
     // === SERVICIOS (API, Cache, etc.) ===
     // =====================================================================
 
-    const cacheService = {
-        get: (key) => {
-            if (!key) return null;
-            try {
-                const item = window.sessionStorage.getItem(`${CACHE_PREFIX}${key}`);
-                return item ? JSON.parse(item) : null;
-            } catch (e) { console.error("Cache read error:", e); return null; }
-        },
-        set: (key, value) => {
-            if (!key) return;
-            try {
-                window.sessionStorage.setItem(`${CACHE_PREFIX}${key}`, JSON.stringify(value));
-            } catch (e) { console.error("Cache write error:", e); }
-        },
-        getLast: () => {
-            try {
-                const item = window.sessionStorage.getItem(LAST_RECIPE_KEY);
-                return item ? JSON.parse(item) : null;
-            } catch (e) { console.error("Cache read last error:", e); return null; }
-        },
-        setLast: (value) => {
-            try {
-                window.sessionStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
-            } catch (e) { console.error("Cache write last error:", e); }
-        },
-        clearLast: () => {
-            try {
-                window.sessionStorage.removeItem(LAST_RECIPE_KEY);
-            } catch (e) { console.error("Cache clear last error:", e); }
+// =====================================================================
+// === SERVICIO DE CACHE (SIMPLIFICADO Y FIABLE) ===
+// =====================================================================
+const cacheService = {
+    get: (key) => {
+        try {
+            const item = localStorage.getItem(key);
+            return item ? JSON.parse(item) : null;
+        } catch (e) {
+            console.error("Cache read error:", e);
+            return null;
         }
-    };
+    },
+    set: (key, value) => {
+        try {
+            localStorage.setItem(key, JSON.stringify(value));
+        } catch (e) {
+            console.error("Cache write error:", e);
+        }
+    },
+    getLast: () => {
+        try {
+            const item = localStorage.getItem(LAST_RECIPE_KEY);
+            return item ? JSON.parse(item) : null;
+        } catch (e) {
+            console.error("Cache read last error:", e);
+            return null;
+        }
+    },
+    setLast: (value) => {
+        try {
+            localStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
+        } catch (e) {
+            console.error("Cache write last error:", e);
+        }
+    },
+    clearLast: () => {
+        try {
+            localStorage.removeItem(LAST_RECIPE_KEY);
+        } catch (e) {
+            console.error("Cache clear last error:", e);
+        }
+    }
+};
+
 
     /**
      * @description Realiza una llamada a la Google Web App (Apps Script).
@@ -159,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
      * @returns {Promise<object>}
      */
     async function callWebApp(action, payload) {
-        // Objeto de registro para depuración antes de la llamada
+        // CORRECCIÓN: Estructura del payload enviada al backend
         const debugPayload = { action, ...payload }; 
         
         try {
@@ -611,7 +618,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             </div>`;
 
-        // **CORRECCIÓN** Pasar initialTotalCost a renderShareModule
         renderShareModule(initialTotalCost);
         addResultsEventListeners();
         
@@ -794,7 +800,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchUserStatus() {
         if (!state.visitorId) return;
         try {
-            // USANDO API ACTION EN MINÚSCULAS
             const result = await callWebApp(ApiAction.GET_STATUS, { userId: state.visitorId });
             if (result.success) {
                 state.userStatus = result.status;
@@ -813,7 +818,6 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Revisa si hay mensajes nuevos para el usuario. */
     async function checkMessages() {
         if (!state.visitorId) return;
-        // USANDO API ACTION EN MINÚSCULAS
         const result = await callWebApp(ApiAction.CHECK_MESSAGES, { userId: state.visitorId });
         if (result.success && result.message) {
             state.unreadMessage = result.message;
@@ -851,7 +855,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 userId: state.visitorId,
                 ...(state.analysisMode === 'photo' ? { imageData: state.imageBase64 } : { ingredientsText: state.ingredientsText })
             };
-            // USANDO API ACTION EN MINÚSCULAS
             const result = await callWebApp(ApiAction.ANALYZE, payload);
 
             if (result.success) {
@@ -932,7 +935,6 @@ document.addEventListener('DOMContentLoaded', () => {
     async function handleClaimBonus() {
         if (!state.visitorId) return;
         try {
-            // USANDO API ACTION EN MINÚSCULAS
             const result = await callWebApp(ApiAction.CLAIM_AD_BONUS, { userId: state.visitorId });
             if (result.success) {
                 state.userStatus = result.status;
@@ -977,7 +979,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             const payload = { recipe: state.recipe, remixType, userId: state.visitorId };
-            // USANDO API ACTION EN MINÚSCULAS
             const result = await callWebApp(ApiAction.REMIX, payload);
             if (result.success) {
                 state.recipe = result.data;
@@ -1000,6 +1001,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function returnToHome() {
         window.androidApp?.showInterstitialAd?.();
         updateView('upload');
+mostrarUltimoAnalisis();
         fetchUserStatus();
     }
 
@@ -1206,15 +1208,105 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('remix-spicy-btn').addEventListener('click', () => handleRemix('spicy'));
     }
 
+    /** Función que añade todos los listeners que dependen de DOMElements. */
+    function addStaticListeners() {
+        // Notificaciones
+        DOMElements.notificationCloseBtn.addEventListener('click', () => DOMElements.notificationBanner.classList.add('hidden'));
+        
+        // Modos de análisis (Event Delegation ya cubre los botones internos)
+        DOMElements.modePhotoBtn.addEventListener('click', () => switchAnalysisMode('photo'));
+        DOMElements.modeIngredientsBtn.addEventListener('click', () => switchAnalysisMode('ingredients'));
+        
+        // Tarjeta de Última Receta
+        DOMElements.showLastRecipeBtn.addEventListener('click', () => {
+            if(state.recipe) {
+                renderResultsView();
+                updateView('results');
+            }
+        });
+
+        // Menú Modal
+        DOMElements.headerLogoBtn.addEventListener('click', () => DOMElements.menuModal.classList.remove('hidden'));
+        DOMElements.menuModal.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
+        
+        // Evitar que el clic en el modal lo cierre (se hace con el primer hijo del modal)
+        // Ya se verificó la existencia en el cuerpo del documento, pero lo reaseguramos aquí:
+        if (DOMElements.menuModal.firstElementChild) {
+            DOMElements.menuModal.firstElementChild.addEventListener('click', e => e.stopPropagation()); 
+        }
+        DOMElements.menuModalCloseBtn.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
+
+
+        // Listeners del header y modales
+        DOMElements.headerNotificationBtn.addEventListener('click', () => {
+            if (state.unreadMessage) {
+                showNotification(state.unreadMessage);
+                state.unreadMessage = null;
+                DOMElements.headerNotificationDot.classList.add('hidden');
+            }
+        });
+
+        // Modales de Límite (Dejamos los listeners dentro de showLimitModal para asegurar el target correcto)
+        
+        // Modales de Guardado 
+        DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+        DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+
+        DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+        // Evitar que el clic en el modal lo cierre (se hace con el primer hijo del modal)
+        if (DOMElements.premiumSaveModal.firstElementChild) {
+            DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
+        }
+        
+        // Listeners de simulación y política
+        DOMElements.simulateAdBtn.addEventListener('click', () => {
+            if (window.handleAdReward) {
+                console.log("Simulating successful rewarded ad...");
+                window.handleAdReward(true, 'Simulated ad success');
+                DOMElements.menuModal.classList.add('hidden');
+            } else {
+                showNotification('La función de manejo de anuncios no está disponible.');
+            }
+        });
+        DOMElements.privacyPolicyBtn.addEventListener('click', () => showNotification('Política de Privacidad (Próximamente)'));
+        DOMElements.updatesBtn.addEventListener('click', () => showNotification('Buscando actualizaciones... (Próximamente)'));
+        
+        // Camera Modal listeners
+        DOMElements.cameraCancelBtn.addEventListener('click', closeCamera);
+        DOMElements.cameraCaptureBtn.addEventListener('click', handleCameraCapture);
+        DOMElements.cameraSwitchBtn.addEventListener('click', () => {
+            const newMode = DOMElements.cameraVideo.srcObject?.getVideoTracks()[0].getSettings().facingMode === 'user' ? 'environment' : 'user';
+            startCameraStream(newMode);
+        });
+    }
+
     /** Función de inicialización principal. */
     async function initialize() {
-        // Ocultar Intro
+        // 1. Inicializa las referencias del DOM (necesario antes de usarlas)
+        initDOMElements(); 
+        
+        // 2. Ocultar Intro
         setTimeout(() => {
             DOMElements.introOverlay.style.opacity = '0';
             setTimeout(() => DOMElements.introOverlay.classList.add('hidden'), 1000);
         }, 3000);
+        
+        // 3. Cargar última receta antes del render inicial (FLUJO DE CACHÉ CORREGIDO)
+        const lastRecipe = cacheService.getLast();
+        if (lastRecipe) {
+            state.recipe = lastRecipe;
+            // Inicializa el estado de los checkboxes para la receta del caché (todos desmarcados por defecto)
+            state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
+            
+            // **CORRECCIÓN CLAVE:** Activar la visibilidad y el nombre de la tarjeta inmediatamente
+            // ¡Esta es la corrección que asegura que la tarjeta se muestre si los elementos existen!
+            if (DOMElements.lastRecipeCard && DOMElements.lastRecipeName) {
+                DOMElements.lastRecipeCard.classList.remove('hidden');
+                DOMElements.lastRecipeName.textContent = lastRecipe.dishName;
+            }
+        }
 
-        // Renderizar componentes estáticos/iniciales
+        // 4. Renderizar componentes estáticos/iniciales
         DOMElements.appVersion.textContent = `Versión ${APP_VERSION}`;
         renderLoader('loader-animation-container');
         renderLoader('camera-loader', true);
@@ -1223,75 +1315,18 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAnalysisMode();
         renderAnalyzeButton(); // Render inicial con "Cargando..."
 
-        // Cargar datos iniciales
+        // 5. Agregar todos los listeners estáticos que dependen de DOMElements
+        addStaticListeners();
+
+        // 6. Cargar datos iniciales de forma ASÍNCRONA (NO BLOQUEANTE)
         await getVisitorId();
         getLocation();
         await fetchUserStatus(); // Esperar a que el status inicial se cargue
         
-        // Carga la última receta del caché
-        const lastRecipe = cacheService.getLast();
-        if (lastRecipe) {
-            state.recipe = lastRecipe;
-            // Inicializa el estado de los checkboxes para la receta del caché (todos desmarcados por defecto)
-            state.checkedIngredients = Array(state.recipe.ingredients.length).fill(false);
-            DOMElements.lastRecipeCard.classList.remove('hidden');
-            DOMElements.lastRecipeName.textContent = lastRecipe.dishName;
-        }
-
+        // 7. Mensajes
         checkMessages();
         setInterval(checkMessages, 30000);
     }
-
-    // --- Listeners globales y de modales ---
-    DOMElements.notificationCloseBtn.addEventListener('click', () => DOMElements.notificationBanner.classList.add('hidden'));
-    DOMElements.modePhotoBtn.addEventListener('click', () => switchAnalysisMode('photo'));
-    DOMElements.modeIngredientsBtn.addEventListener('click', () => switchAnalysisMode('ingredients'));
-    DOMElements.showLastRecipeBtn.addEventListener('click', () => {
-        if(state.recipe) {
-            renderResultsView();
-            updateView('results');
-        }
-    });
-
-    DOMElements.headerLogoBtn.addEventListener('click', () => DOMElements.menuModal.classList.remove('hidden'));
-    DOMElements.menuModal.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
-    DOMElements.menuModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
-    DOMElements.menuModalCloseBtn.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
-    DOMElements.privacyPolicyBtn.addEventListener('click', () => showNotification('Política de Privacidad (Próximamente)'));
-    DOMElements.updatesBtn.addEventListener('click', () => showNotification('Buscando actualizaciones... (Próximamente)'));
-    DOMElements.simulateAdBtn.addEventListener('click', () => {
-        if (window.handleAdReward) {
-            console.log("Simulating successful rewarded ad...");
-            window.handleAdReward(true, 'Simulated ad success');
-            DOMElements.menuModal.classList.add('hidden');
-        } else {
-            showNotification('La función de manejo de anuncios no está disponible.');
-        }
-    });
-
-    DOMElements.limitModal.addEventListener('click', closeLimitModal);
-    DOMElements.limitModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
-
-    DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-    DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
-    DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-    DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-    
-    DOMElements.headerNotificationBtn.addEventListener('click', () => {
-        if (state.unreadMessage) {
-            showNotification(state.unreadMessage);
-            state.unreadMessage = null;
-            DOMElements.headerNotificationDot.classList.add('hidden');
-        }
-    });
-
-    // Camera Modal listeners
-    DOMElements.cameraCancelBtn.addEventListener('click', closeCamera);
-    DOMElements.cameraCaptureBtn.addEventListener('click', handleCameraCapture);
-    DOMElements.cameraSwitchBtn.addEventListener('click', () => {
-        const newMode = DOMElements.cameraVideo.srcObject?.getVideoTracks()[0].getSettings().facingMode === 'user' ? 'environment' : 'user';
-        startCameraStream(newMode);
-    });
 
     // Definir función global para que la app Android pueda llamarla
     window.handleAdReward = (wasSuccessful, message) => {
@@ -1302,7 +1337,27 @@ document.addEventListener('DOMContentLoaded', () => {
             showNotification("No se pudo obtener el bono del anuncio.");
         }
     };
-    
-    // Iniciar la aplicación
-    initialize();
+ // =====================================================================
+// === MOSTRAR EL ÚLTIMO ANÁLISIS GUARDADO EN LA PÁGINA PRINCIPAL ===
+// =====================================================================
+function mostrarUltimoAnalisis() {
+    const lastRecipe = cacheService.getLast();
+    if (!lastRecipe) return; // No hay análisis previo
+
+    // Mostrar tarjeta “Ver Última Receta”
+    DOMElements.lastRecipeCard.classList.remove('hidden');
+    DOMElements.lastRecipeName.textContent = lastRecipe.dishName || "Receta anterior";
+
+    // Al hacer clic, mostrar la vista de resultados guardada
+    DOMElements.showLastRecipeBtn.addEventListener('click', () => {
+        state.recipe = lastRecipe;
+        updateView('results');
+        renderResultsView();
+    });
+}
+
+// Inicializar DOM y luego mostrar la última receta (solo si existe)
+initDOMElements();
+initialize();
+mostrarUltimoAnalisis();
 });
