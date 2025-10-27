@@ -4,22 +4,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // === CONSTANTES Y CONFIGURACIÓN ===
     // =====================================================================
     
-    // URL de la Web App de Google actualizada
+    // IMPORTANTE: Recuerda actualizar esta URL cuando redespliegues tu script de Google.
     const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbytqUkw9u2HQywOXlNcXsMpJaJZZlh4wXFuDwme3GFJdk-gKgT7JUkT0Cn9mpjQXOfX2A/exec'; 
 
-    const APP_VERSION = "1.0.2";
+    const APP_VERSION = "1.0.3"; // Versión actualizada
     const LOADING_MESSAGES = [
         "Analizando los sabores...",
         "Consultando a nuestros chefs de IA...",
         "Calculando los costos locales...",
-        "¡Casi listo! Dando los toques finales...",
+        "Casi listo! Dando los toques finales...",
     ];
     const ApiAction = {
         GET_STATUS: 'get_status', 
         ANALYZE: 'analyze',
         REMIX: 'remix',
         CLAIM_AD_BONUS: 'claim_ad_bonus',
-        CHECK_MESSAGES: 'check_messages',
+        // CHECK_MESSAGES: 'check_messages', // --- ELIMINADO ---
+        GET_YOUTUBE_VIDEOS: 'get_youtube_videos',
     };
     const CACHE_PREFIX = 'cusicusa_cache_';
     const LAST_RECIPE_KEY = 'cusicusa_last_recipe';
@@ -92,9 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
         DOMElements.limitModalTitle = document.getElementById('limit-modal-title');
         DOMElements.limitModalDescription = document.getElementById('limit-modal-description');
         DOMElements.limitModalActions = document.getElementById('limit-modal-actions');
-        DOMElements.premiumSaveModal = document.getElementById('premium-save-modal');
-        DOMElements.premiumSaveUpgradeBtn = document.getElementById('premium-save-upgrade-btn');
-        DOMElements.premiumSaveCloseBtn = document.getElementById('premium-save-close-btn');
+        // --- ELIMINADO: REFERENCIAS AL MODAL PREMIUM ---
+        // DOMElements.premiumSaveModal = document.getElementById('premium-save-modal');
+        // DOMElements.premiumSaveUpgradeBtn = document.getElementById('premium-save-upgrade-btn');
+        // DOMElements.premiumSaveCloseBtn = document.getElementById('premium-save-close-btn');
         DOMElements.cameraModal = document.getElementById('camera-modal');
         DOMElements.cameraVideo = document.getElementById('camera-video');
         DOMElements.cameraCanvas = document.getElementById('camera-canvas');
@@ -110,49 +112,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // =====================================================================
 
     const cacheService = {
-        get: (key) => {
-            try {
-                const item = localStorage.getItem(key);
-                return item ? JSON.parse(item) : null;
-            } catch (e) {
-                console.error("Cache read error:", e);
-                return null;
-            }
-        },
-        set: (key, value) => {
-            try {
-                localStorage.setItem(key, JSON.stringify(value));
-            } catch (e) {
-                console.error("Cache write error:", e);
-            }
-        },
-        getLast: () => {
-            try {
-                const item = localStorage.getItem(LAST_RECIPE_KEY);
-                return item ? JSON.parse(item) : null;
-            } catch (e) {
-                console.error("Cache read last error:", e);
-                return null;
-            }
-        },
-        setLast: (value) => {
-            try {
-                localStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value));
-            } catch (e) {
-                console.error("Cache write last error:", e);
-            }
-        },
-        clearLast: () => {
-            try {
-                localStorage.removeItem(LAST_RECIPE_KEY);
-            } catch (e) {
-                console.error("Cache clear last error:", e);
-            }
-        }
+        get: (key) => { try { const item = localStorage.getItem(key); return item ? JSON.parse(item) : null; } catch (e) { console.error("Cache read error:", e); return null; } },
+        set: (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { console.error("Cache write error:", e); } },
+        getLast: () => { try { const item = localStorage.getItem(LAST_RECIPE_KEY); return item ? JSON.parse(item) : null; } catch (e) { console.error("Cache read last error:", e); return null; } },
+        setLast: (value) => { try { localStorage.setItem(LAST_RECIPE_KEY, JSON.stringify(value)); } catch (e) { console.error("Cache write last error:", e); } },
+        clearLast: () => { try { localStorage.removeItem(LAST_RECIPE_KEY); } catch (e) { console.error("Cache clear last error:", e); } }
     };
 
     async function callWebApp(action, payload) {
-        const debugPayload = { action, ...payload }; 
+        const debugPayload = { action, ...payload };
         try {
             const response = await fetch(GOOGLE_WEB_APP_URL, {
                 method: 'POST',
@@ -160,19 +128,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 credentials: 'omit',
                 body: JSON.stringify(debugPayload),
             });
-            if (!response.ok) {
-                throw new Error(`Network response was not ok: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`Network response was not ok: ${response.statusText}`);
             const text = await response.text();
             let result;
             try {
                 result = JSON.parse(text);
             } catch (e) {
-                console.error(`Error: La respuesta para la acción ${action} no es un JSON válido.`, text);
-                return { success: false, message: 'Respuesta inválida del servidor. Revisa el script de Google Apps.', rawResponse: text };
+                console.error(`Error: La respuesta para la accion ${action} no es un JSON valido.`, text);
+                return { success: false, message: 'Respuesta invalida del servidor.', rawResponse: text };
             }
-            if (result.success === false) {
-                 console.error(`API Logic Error for action ${action}:`, result.message);
+            if (!result.success) {
+                console.error(`API Logic Error for action ${action}:`, result.message);
             }
             if (result.status && typeof result.status.adCount !== 'undefined') {
                 result.status.rewardedUsedToday = result.status.adCount;
@@ -180,8 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             return result;
         } catch (error) {
-            console.error(`API Communication Error for action ${action} (Network/Fetch failure):`, error);
-            const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+            console.error(`API Communication Error for action ${action}:`, error);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             return { success: false, message: `API Communication Error: ${errorMessage}` };
         }
     }
@@ -216,9 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /** Muestra un banner de notificación que permanece visible hasta que el usuario lo cierra. */
     function showNotification(messageOrObject) {
         if (!messageOrObject) return;
-
         let content, type;
-        
         if (typeof messageOrObject === 'string') {
             content = messageOrObject;
             type = 'text';
@@ -226,17 +190,45 @@ document.addEventListener('DOMContentLoaded', () => {
             content = messageOrObject.content;
             type = messageOrObject.type || 'text';
         }
-
         if (!content) return;
-
         if (type === 'html') {
             DOMElements.notificationMessage.innerHTML = content;
         } else {
             DOMElements.notificationMessage.textContent = content;
         }
-        
         DOMElements.notificationBanner.classList.remove('hidden');
         DOMElements.notificationBanner.classList.add('animate-slide-down');
+    }
+
+    /** Muestra un toast de error temporal en la parte inferior. */
+    function showServerErrorToast(message) {
+        const toastElement = document.getElementById('server-error-toast');
+        const messageElement = document.getElementById('server-error-message');
+        
+        if (!toastElement || !messageElement) return;
+
+        messageElement.textContent = message;
+        
+        // 1. Quitar 'hidden' para que sea parte del layout
+        toastElement.classList.remove('hidden');
+        
+        // 2. Forzar un "reflow" para que la transición funcione
+        void toastElement.offsetWidth; 
+
+        // 3. Añadir las clases de "mostrar"
+        toastElement.classList.remove('opacity-0', 'translate-y-3');
+        toastElement.classList.add('opacity-100', 'translate-y-0');
+
+        // 4. Ocultar después de 5 segundos
+        setTimeout(() => {
+            toastElement.classList.remove('opacity-100', 'translate-y-0');
+            toastElement.classList.add('opacity-0', 'translate-y-3');
+            
+            // 5. Añadir 'hidden' de nuevo cuando la transición termine
+            setTimeout(() => {
+                toastElement.classList.add('hidden');
+            }, 300); // 300ms es la duración de la transición (ver HTML)
+        }, 5000);
     }
 
     function renderLocationStatus() {
@@ -297,46 +289,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function renderSpecialOfferCard() {
-        const offers = [
-            { image: "https://images.unsplash.com/photo-1518843875459-f738682238a6?q=80&w=2070&auto=format&fit=crop", title: "¡Conviértete en Chef Pro!", description: "Accede a funciones exclusivas y análisis ilimitados.", buttonText: "Ver Planes Pro", buttonClass: "bg-teal-500 hover:bg-teal-400" },
-            { image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2070&auto=format&fit=crop", title: "Planifica tu Semana", description: "Genera un menú semanal completo con nuestra IA.", buttonText: "Crear Menú", buttonClass: "bg-blue-500 hover:bg-blue-400" },
-            { image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=2070&auto=format&fit=crop", title: "¡Comparte y Gana!", description: "Invita a un amigo y ambos obtienen 5 análisis extra.", buttonText: "Invitar Amigos", buttonClass: "bg-purple-500 hover:bg-purple-400" },
-            { image: "https://images.unsplash.com/photo-1498837167922-ddd27525d352?q=80&w=2070&auto=format&fit=crop", title: "¿Necesitas una dieta especial?", description: "Desbloquea recetas keto, veganas, y más con CusiCusa.", buttonText: "Explorar Dietas", buttonClass: "bg-green-500 hover:bg-green-400" }
-        ];
-        let currentOfferIndex = 0;
-        let intervalId = null;
+// --- FUNCIÓN MODIFICADA (PARA COINCIDIR CON LA IMAGEN DE EJEMPLO) ---
+    /**
+     * Renderiza un carrusel con los últimos videos de YouTube.
+     * @param {Array} videos - Array de objetos de video del backend.
+     * @param {string} subscribeUrl - URL de suscripción (no se usa aquí).
+     */
+    function renderSpecialOfferCard(videos, subscribeUrl) {
+        if (!videos || videos.length === 0) {
+            DOMElements.specialOfferCard.innerHTML = '';
+            return;
+        }
 
-        function updateOffer() {
-            const currentOffer = offers[currentOfferIndex];
+        // Color fijo para el botón como en la imagen de ejemplo
+        const buttonColorClass = 'bg-teal-500 hover:bg-teal-400';
+
+        let currentVideoIndex = 0;
+        let intervalId = null;
+        const carouselId = 'video-carousel-' + Date.now();
+
+        function updateCarousel() {
+            const oldDots = document.getElementById(carouselId);
+            if (oldDots) oldDots.remove();
+
+            const currentVideo = videos[currentVideoIndex];
+
+            // 1. Título: Limitar a X caracteres (ej. 70) y poner en mayúsculas
+            let videoTitle = currentVideo.title.toUpperCase();
+            const MAX_TITLE_CHARS = 30; // <-- AJUSTA ESTE LÍMITE DE CARACTERES SI ES NECESARIO
+            if (videoTitle.length > MAX_TITLE_CHARS) {
+                videoTitle = videoTitle.substring(0, MAX_TITLE_CHARS) + '...';
+            }
+
+            // 2. Descripción: Limitar a Y caracteres (ej. 100)
+            let description = currentVideo.description || "Mira este video para más contenido.";
+            const MAX_DESC_CHARS = 50; // <-- AJUSTA ESTE LÍMITE DE CARACTERES SI ES NECESARIO
+            if (description.length > MAX_DESC_CHARS) {
+                description = description.substring(0, MAX_DESC_CHARS) + '...';
+            }
+
             DOMElements.specialOfferCard.innerHTML = `
-                <div class="relative rounded-2xl overflow-hidden shadow-lg mt-6 bg-gray-800 transform transition-transform duration-300 hover:scale-[1.03] h-48">
-                    ${offers.map((offer, index) => `<img src="${offer.image}" alt="Promotional background" class="absolute w-full h-full object-cover transition-opacity duration-1000 ${index === currentOfferIndex ? 'opacity-30' : 'opacity-0'}" />`).join('')}
+                <div class="relative rounded-2xl overflow-hidden shadow-lg bg-gray-800 transform transition-transform duration-300 hover:scale-[1.03] h-56 mt-6">
+
+                    <div class="absolute inset-0">
+                        ${videos.map((video, index) => `
+                            <img src="${video.thumbnail}" alt="Thumbnail de video" class="absolute w-full h-full object-cover transition-opacity duration-1000 ${index === currentVideoIndex ? 'opacity-30' : 'opacity-0'}" />
+                        `).join('')}
+                    </div>
+
                     <div class="relative p-6 flex flex-col justify-between h-full text-white">
                         <div class="transition-opacity duration-700">
-                            <h3 class="text-2xl font-extrabold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5)">${currentOffer.title}</h3>
-                            <p class="mt-1 text-sm font-medium opacity-90" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">${currentOffer.description}</p>
+                            <h3 class="text-2xl font-extrabold" style="text-shadow: 0 2px 4px rgba(0,0,0,0.5)">${videoTitle}</h3>
+                            <p class="mt-1 text-sm font-medium opacity-90" style="text-shadow: 0 1px 3px rgba(0,0,0,0.5)">${description}</p>
                         </div>
-                        <button class="mt-4 self-start text-white font-bold py-2 px-5 rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg ${currentOffer.buttonClass}">${currentOffer.buttonText}</button>
+
+                        <a href="https://www.youtube.com/watch?v=${currentVideo.videoId}" target="_blank" rel="noopener noreferrer" class="self-start text-center text-white font-bold py-2 px-5 rounded-lg text-sm transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 bg-teal-500 hover:bg-teal-400">
+                            Ver Video
+                        </a>
                     </div>
-                </div>`;
+                </div>
+
+                <div id="${carouselId}" class="flex justify-center gap-2 mt-3">
+                    ${videos.map((_, index) => `
+                        <button data-index="${index}" class="video-dot w-2 h-2 rounded-full transition-all ${index === currentVideoIndex ? 'bg-brand-orange scale-125' : 'bg-gray-300'}" aria-label="Ir al video ${index + 1}"></button>
+                    `).join('')}
+                </div>
+            `;
+
+            document.querySelectorAll(`#${carouselId} .video-dot`).forEach(dot => {
+                dot.addEventListener('click', (e) => {
+                    currentVideoIndex = parseInt(e.target.getAttribute('data-index'));
+                    updateCarousel();
+                    startCarousel(); // Reinicia el timer al hacer clic en un dot
+                });
+            });
         }
-        
+
         function stopCarousel() {
-            if(intervalId) clearInterval(intervalId);
+            if (intervalId) clearInterval(intervalId);
         }
 
         function startCarousel() {
             stopCarousel();
-            updateOffer();
+            updateCarousel(); // Muestra el primer slide inmediatamente
             intervalId = setInterval(() => {
-                currentOfferIndex = (currentOfferIndex + 1) % offers.length;
-                updateOffer();
-            }, 5000);
+                currentVideoIndex = (currentVideoIndex + 1) % videos.length;
+                updateCarousel();
+            }, 5000); // Cambia cada 5 segundos
         }
-        
-        startCarousel();
+
+        startCarousel(); // Inicia el carrusel
     }
+    // --- FIN DE LA FUNCIÓN MODIFICADA ---
 
     function renderAnalysisMode() {
         if (state.analysisMode === 'photo') {
@@ -368,10 +412,10 @@ document.addEventListener('DOMContentLoaded', () => {
             DOMElements.analysisModeContainer.innerHTML = `
                 <div class="space-y-4">
                     <div class="text-center text-gray-600">
-                        <p class="font-bold text-xl text-gray-800">¿Qué tienes en tu refri?</p>
+                        <p class="font-bold text-xl text-gray-800">Que tienes en tu refri?</p>
                         <p class="text-sm mt-1">Lista tus ingredientes y crearemos una receta para ti.</p>
                     </div>
-                    <textarea id="ingredients-textarea" rows="5" class="w-full p-4 rounded-2xl bg-orange-50 border-2 border-dashed border-orange-200 text-orange-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-orange focus:border-solid transition-all" placeholder="Ej: Arroz, 2 pechugas de pollo, 1 limón, aceite de oliva...">${state.ingredientsText}</textarea>
+                    <textarea id="ingredients-textarea" rows="5" class="w-full p-4 rounded-2xl bg-orange-50 border-2 border-dashed border-orange-200 text-orange-800 font-semibold focus:outline-none focus:ring-2 focus:ring-brand-orange focus:border-solid transition-all" placeholder="Ej: Arroz, 2 pechugas de pollo, 1 limon, aceite de oliva...">${state.ingredientsText}</textarea>
                 </div>`;
         }
         addAnalysisModeEventListeners();
@@ -403,7 +447,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         text = 'Usar Bono';
                         disabled = false;
                     } else {
-                        text = 'Límite diario alcanzado';
+                        text = 'Limite diario alcanzado';
                     }
                 }
             }
@@ -457,7 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (state.error && !state.recipe) {
             DOMElements.resultsView.innerHTML = `
                 <div class="text-center p-8 flex flex-col items-center justify-center h-full animate-fadeIn">
-                    <h2 class="text-2xl font-bold text-red-600 mb-2">¡Oops! Algo salió mal</h2>
+                    <h2 class="text-2xl font-bold text-red-600 mb-2">Oops! Algo salio mal</h2>
                     <p class="text-gray-600 bg-red-50 p-4 rounded-lg mb-6 max-w-sm w-full">${state.error}</p>
                     <button id="return-home-btn" class="w-full max-w-xs h-12 flex items-center justify-center rounded-xl font-semibold text-white bg-brand-orange hover:bg-brand-orange-light">Intentar de Nuevo</button>
                 </div>`;
@@ -468,8 +512,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.recipe) {
              DOMElements.resultsView.innerHTML = `
                 <div class="text-center p-8 flex flex-col items-center justify-center h-full animate-fadeIn">
-                    <h2 class="text-2xl font-bold text-gray-700 mb-2">No se encontró la receta</h2>
-                    <p class="text-gray-500 mb-6 max-w-sm w-full">No pudimos generar una receta. Intenta con una foto más clara o ingredientes diferentes.</p>
+                    <h2 class="text-2xl font-bold text-gray-700 mb-2">No se encontro la receta</h2>
+                    <p class="text-gray-500 mb-6 max-w-sm w-full">No pudimos generar una receta. Intenta con una foto mas clara o ingredientes diferentes.</p>
                     <button id="return-home-btn" class="w-full max-w-xs h-12 flex items-center justify-center rounded-xl font-semibold text-white bg-brand-orange">Volver a Empezar</button>
                 </div>`;
              document.getElementById('return-home-btn').addEventListener('click', returnToHome);
@@ -487,7 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const remixMessage = (() => {
             if (!state.userStatus) return '';
             const { isBonusActive, rewardedUsedToday, adBonusLimit } = state.userStatus;
-            if (isBonusActive) return `<p class="text-center text-xs text-green-700 mb-3 font-semibold">¡Bono disponible para usar en Remix!</p>`;
+            if (isBonusActive) return `<p class="text-center text-xs text-green-700 mb-3 font-semibold">Bono disponible para usar en Remix!</p>`;
             if (rewardedUsedToday < adBonusLimit) return `<p class="text-center text-xs text-amber-700 mb-3">Desbloquea Remix con un anuncio.</p>`;
             return `<p class="text-center text-xs text-gray-500 mb-3">Has usado todos tus bonos por hoy.</p>`;
         })();
@@ -532,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>` : ''}
             ${supermarketSuggestions && supermarketSuggestions.length > 0 ? `
             <div class="mb-6">
-                <h2 class="text-xl font-bold text-gray-700 mb-3">🏪 Dónde Comprar</h2>
+                <h2 class="text-xl font-bold text-gray-700 mb-3">🏪 Donde Comprar</h2>
                 <div class="flex flex-wrap gap-2">${supermarketSuggestions.map(store => `<span class="bg-green-100 text-green-800 text-sm font-semibold px-3 py-1.5 rounded-full">${store}</span>`).join('')}</div>
             </div>` : ''}
             <div id="share-module"></div>
@@ -557,22 +601,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h1 class="text-3xl font-extrabold text-gray-800 tracking-tight pr-4">${dishName}</h1>
                     <button id="save-recipe-btn" class="flex-shrink-0 flex items-center gap-2 text-sm font-semibold text-amber-700 bg-amber-100 px-3 py-1.5 rounded-full transition hover:bg-amber-200">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
-                        Guardar
+                        <span>Guardar</span>
                     </button>
                 </div>
                 <div class="flex gap-2 text-center my-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
                     <div class="flex-1 flex flex-col items-center"><div class="text-brand-orange"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></div><p class="text-sm font-bold text-gray-800 mt-1">${preparationTime}</p><p class="text-xs text-gray-500">Tiempo</p></div>
                     <div class="flex-1 flex flex-col items-center"><div class="text-brand-orange"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg></div><p class="text-sm font-bold text-gray-800 mt-1">${difficulty}</p><p class="text-xs text-gray-500">Dificultad</p></div>
-                    <div class="flex-1 flex flex-col items-center"><div class="text-brand-orange"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><p class="text-sm font-bold text-gray-800 mt-1">${calories}</p><p class="text-xs text-gray-500">Calorías</p></div>
+                    <div class="flex-1 flex flex-col items-center"><div class="text-brand-orange"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg></div><p class="text-sm font-bold text-gray-800 mt-1">${calories}</p><p class="text-xs text-gray-500">Calorias</p></div>
                 </div>
                 
                 <div class="my-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-2xl">
                     <h2 class="text-center text-lg font-bold text-amber-800 mb-1">Chef Remix</h2>
                     ${remixMessage}
                     <div class="flex gap-3 text-white text-sm">
-                        <button id="remix-quick-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-sky-500 hover:bg-sky-600"><span class="text-2xl">⚡️</span><span>Versión Rápida</span></button>
-                        <button id="remix-healthy-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-600"><span class="text-2xl">🥗</span><span>Versión Saludable</span></button>
-                        <button id="remix-spicy-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-red-500 hover:bg-red-600"><span class="text-2xl">🌶️</span><span>Versión Picante</span></button>
+                        <button id="remix-quick-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-sky-500 hover:bg-sky-600"><span class="text-2xl">⚡️</span><span>Version Rapida</span></button>
+                        <button id="remix-healthy-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-emerald-500 hover:bg-emerald-600"><span class="text-2xl">🥗</span><span>Version Saludable</span></button>
+                        <button id="remix-spicy-btn" class="flex-1 flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl font-semibold transition-all duration-300 transform hover:-translate-y-1 disabled:transform-none disabled:opacity-50 disabled:cursor-not-allowed bg-red-500 hover:bg-red-600"><span class="text-2xl">🌶️</span><span>Version Picante</span></button>
                     </div>
                 </div>
 
@@ -665,8 +709,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!context || !state.userStatus) return;
 
         const contentMap = {
-            ingredients: { icon: '🌿', title: 'Función Premium', description: "Analizar por ingredientes requiere 1 Bono.", confirmText: 'Usar Bono' },
-            extra_analysis: { icon: '📸', title: 'Análisis Extra', description: '¿Se te acabaron los análisis gratis? ¡Usa un Bono para analizar esta foto!', confirmText: 'Usar Bono' },
+            ingredients: { icon: '🌿', title: 'Funcion Premium', description: "Analizar por ingredientes requiere 1 Bono.", confirmText: 'Usar Bono' },
+            extra_analysis: { icon: '📸', title: 'Analisis Extra', description: 'Se te acabaron los analisis gratis? Usa un Bono para analizar esta foto!', confirmText: 'Usar Bono' },
             remix: { icon: '🧑‍🍳', title: 'Desbloquear Chef Remix', description: 'Transformar tu receta con Chef Remix requiere 1 Bono.', confirmText: 'Usar Bono' },
         };
         const { isBonusActive, rewardedUsedToday, adBonusLimit } = state.userStatus;
@@ -683,7 +727,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (canEarnMore) {
             actionsHTML = `<button id="limit-modal-watch-ad" class="w-full h-12 flex items-center justify-center gap-2 rounded-xl font-semibold text-white bg-brand-orange hover:bg-brand-orange-light transition-transform transform hover:scale-105">Ver Anuncio (${adBonusLimit - rewardedUsedToday} disp.)</button>`;
         } else {
-            actionsHTML = `<p class="text-sm font-medium text-gray-600 bg-gray-100 p-3 rounded-lg">Has usado todos tus bonos por hoy. ¡Vuelve mañana!</p>`;
+            actionsHTML = `<p class="text-sm font-medium text-gray-600 bg-gray-100 p-3 rounded-lg">Has usado todos tus bonos por hoy. Vuelve manana!</p>`;
         }
         actionsHTML += `<button id="limit-modal-close" class="w-full h-12 flex items-center justify-center rounded-xl font-semibold text-gray-700 bg-gray-200 hover:bg-gray-300">Ahora no</button>`;
         
@@ -727,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getLocation() {
         if (!navigator.geolocation) {
-            state.locationError = "La geolocalización no es compatible.";
+            state.locationError = "La geolocalizacion no es compatible.";
             renderLocationStatus();
             return;
         }
@@ -739,10 +783,10 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             (err) => {
                 switch (err.code) {
-                    case err.PERMISSION_DENIED: state.locationError = "Permiso de ubicación denegado."; break;
-                    case err.POSITION_UNAVAILABLE: state.locationError = "Ubicación no disponible."; break;
-                    case err.TIMEOUT: state.locationError = "La solicitud de ubicación expiró."; break;
-                    default: state.locationError = "No se pudo obtener la ubicación."; break;
+                    case err.PERMISSION_DENIED: state.locationError = "Permiso de ubicacion denegado."; break;
+                    case err.POSITION_UNAVAILABLE: state.locationError = "Ubicacion no disponible."; break;
+                    case err.TIMEOUT: state.locationError = "La solicitud de ubicacion expiro."; break;
+                    default: state.locationError = "No se pudo obtener la ubicacion."; break;
                 }
                 renderLocationStatus();
             },
@@ -750,12 +794,25 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     }
 
+    // --- MODIFICADO: AHORA TAMBIÉN RECIBE Y PROCESA EL MENSAJE ---
     async function fetchUserStatus() {
         if (!state.visitorId) return;
         try {
+            // Esta llamada AHORA devuelve { success, status, message }
             const result = await callWebApp(ApiAction.GET_STATUS, { userId: state.visitorId });
+            
             if (result.success) {
+                // 1. Guardamos el estado (como antes)
                 state.userStatus = result.status;
+
+                // 2. Revisamos si vino un mensaje "colgado" (piggybacked)
+                if (result.message) {
+                    state.unreadMessage = result.message; // Guardamos el mensaje
+                    DOMElements.headerNotificationDot.classList.remove('hidden'); // Mostramos el punto
+                    DOMElements.headerNotificationBtn.classList.add('animate-ring');
+                    setTimeout(() => DOMElements.headerNotificationBtn.classList.remove('animate-ring'), 1000);
+                }
+
             } else {
                 console.error("Failed to fetch user status:", result.message);
                 state.userStatus = null;
@@ -768,16 +825,50 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function checkMessages() {
-        if (!state.visitorId) return;
-        const result = await callWebApp(ApiAction.CHECK_MESSAGES, { userId: state.visitorId });
-        if (result.success && result.message) {
-            state.unreadMessage = result.message;
-            DOMElements.headerNotificationDot.classList.remove('hidden');
-            DOMElements.headerNotificationBtn.classList.add('animate-ring');
-            setTimeout(() => DOMElements.headerNotificationBtn.classList.remove('animate-ring'), 1000);
+    // --- NUEVA FUNCION ---
+    /**
+     * Llama al backend para obtener los últimos videos de YouTube y los renderiza.
+     * [OPTIMIZADO] Utiliza caché por 2 DÍAS.
+     */
+    async function fetchYouTubeVideos() {
+        if (!state.visitorId) return; // Requerido para la llamada a la API
+        
+        try {
+            // Intentar obtener de la caché primero
+            const cacheKey = 'youtube_videos_cache';
+            const cachedData = cacheService.get(cacheKey);
+            const now = new Date().getTime();
+
+            // --- MODIFICADO: 3600000 (1 hora) -> 172800000 (2 días) ---
+            if (cachedData && (now - cachedData.timestamp < 172800000)) { // 2 días
+                renderSpecialOfferCard(cachedData.videos, cachedData.subscribeUrl);
+                return; 
+            }
+
+            // Si no está en caché o está expirada, buscar
+            const result = await callWebApp(ApiAction.GET_YOUTUBE_VIDEOS, { userId: state.visitorId }); 
+            
+            if (result.success && result.videos.length > 0) {
+                renderSpecialOfferCard(result.videos, result.subscribeUrl);
+                // Guardar en caché
+                cacheService.set(cacheKey, { videos: result.videos, subscribeUrl: result.subscribeUrl, timestamp: now });
+            } else if (result.success) {
+                // No hay videos
+                DOMElements.specialOfferCard.innerHTML = '';
+            }
+            else {
+                console.error("Failed to fetch YouTube videos:", result.message);
+                // No hacer nada, simplemente no mostrar el card
+                DOMElements.specialOfferCard.innerHTML = '';
+            }
+        } catch (err) {
+            console.error("Error calling fetchYouTubeVideos:", err);
+            DOMElements.specialOfferCard.innerHTML = ''; // Ocultar en caso de error
         }
     }
+    
+    // --- ELIMINADO: La función checkMessages() ya no es necesaria ---
+    // async function checkMessages() { ... }
 
     async function callAnalysisApi() {
         if (!state.visitorId) return;
@@ -815,7 +906,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderResultsView();
                 updateView('results');
             } else {
-                state.error = result.message || 'Ocurrió un error desconocido.';
+                const errorMessage = result.message || '';
+                if (errorMessage.includes('503') && (errorMessage.toLowerCase().includes('overloaded') || errorMessage.includes('UNAVAILABLE'))) {
+                    showServerErrorToast('El servidor esta sobrecargado. Por favor, intentalo de nuevo mas tarde.');
+                }
+
+                state.error = result.message || 'Ocurrio un error desconocido.';
                 updateView('upload');
             }
             if (result.status) {
@@ -824,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (err) {
-            state.error = err instanceof Error ? err.message : 'Falló la comunicación con el servidor.';
+            state.error = err instanceof Error ? err.message : 'Fallo la comunicacion con el servidor.';
             updateView('upload');
         } finally {
             renderAnalyzeButton();
@@ -884,9 +980,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await callWebApp(ApiAction.CLAIM_AD_BONUS, { userId: state.visitorId });
             if (result.success) {
                 state.userStatus = result.status;
-                showNotification("¡Bono activado! Ya puedes usar la función.");
+                showNotification("Bono activado! Ya puedes usar la funcion.");
             } else {
-                const message = result.message === 'bonus_limit_reached' ? 'Has alcanzado el límite de bonos por hoy.' : 'Error al reclamar el bono.';
+                const message = result.message === 'bonus_limit_reached' ? 'Has alcanzado el limite de bonos por hoy.' : 'Error al reclamar el bono.';
                 showNotification(message);
             }
         } catch (err) {
@@ -935,7 +1031,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (result.status) state.userStatus = result.status;
         } catch (err) {
-            state.error = err instanceof Error ? err.message : 'Falló la remezcla de la receta.';
+            state.error = err instanceof Error ? err.message : 'Fallo la remezcla de la receta.';
         } finally {
             state.isRemixing = false;
             state.currentRemixType = null;
@@ -1030,7 +1126,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const copyBtn = document.getElementById('copy-recipe-btn');
                 if(copyBtn) {
                     const originalText = copyBtn.querySelector('span').textContent;
-                    copyBtn.querySelector('span').textContent = '¡Copiado! ✅';
+                    copyBtn.querySelector('span').textContent = 'Copiado! ✅';
                     setTimeout(() => { copyBtn.querySelector('span').textContent = originalText; }, 2000);
                 }
             });
@@ -1057,7 +1153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             DOMElements.cameraVideo.classList.remove('hidden');
         } catch (err) {
             DOMElements.cameraLoader.classList.add('hidden');
-            DOMElements.cameraError.textContent = 'No se pudo acceder a la cámara. Por favor, revisa los permisos.';
+            DOMElements.cameraError.textContent = 'No se pudo acceder a la camara. Por favor, revisa los permisos.';
             DOMElements.cameraError.classList.remove('hidden');
             console.error(err);
         }
@@ -1111,8 +1207,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.androidApp?.showRewardedVideo) {
             window.androidApp.showRewardedVideo();
         } else {
-            console.warn("La función de bonos solo está disponible en la aplicación móvil.");
-            showNotification("La función de bonos solo está disponible en la aplicación móvil.");
+            console.warn("La funcion de bonos solo esta disponible en la aplicacion movil.");
+            showNotification("La funcion de bonos solo esta disponible en la aplicacion movil.");
         }
     }
 
@@ -1137,17 +1233,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /** Añade los event listeners para la vista de resultados. */
+    /** Anade los event listeners para la vista de resultados. */
     function addResultsEventListeners() {
-        // Se busca cada botón y solo si se encuentra (!= null), se le añade el listener.
         const returnBtn = document.getElementById('return-home-btn');
         if (returnBtn) {
             returnBtn.addEventListener('click', returnToHome);
         }
 
+        // --- MODIFICADO: AHORA GUARDA EN LOCALSTORAGE ---
         const saveBtn = document.getElementById('save-recipe-btn');
         if (saveBtn) {
-            saveBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.remove('hidden'));
+            saveBtn.addEventListener('click', (e) => {
+                if (state.recipe) {
+                    try {
+                        // Usamos un prefijo para guardar varias recetas
+                        cacheService.set(`saved_recipe_${state.recipe.dishName}`, state.recipe);
+                        
+                        // Feedback visual
+                        const button = e.currentTarget;
+                        const span = button.querySelector('span');
+                        const originalText = span.textContent;
+                        button.disabled = true;
+                        span.textContent = 'Guardado! ✅';
+                        
+                        setTimeout(() => {
+                            span.textContent = originalText;
+                            button.disabled = false;
+                        }, 2000);
+
+                    } catch (error) {
+                        console.error("Error guardando receta:", error);
+                        showNotification("No se pudo guardar la receta.");
+                    }
+                }
+            });
         }
 
         const quickBtn = document.getElementById('remix-quick-btn');
@@ -1195,13 +1314,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-
-        DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        if (DOMElements.premiumSaveModal.firstElementChild) {
-            DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
-        }
+        // --- MODIFICADO: Lógica de Modal Premium eliminada ---
+        // DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+        // DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+        // DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
+        // if (DOMElements.premiumSaveModal.firstElementChild) {
+        //     DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
+        // }
         
         DOMElements.simulateAdBtn.addEventListener('click', () => {
             if (window.handleAdReward) {
@@ -1209,11 +1328,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.handleAdReward(true, 'Simulated ad success');
                 DOMElements.menuModal.classList.add('hidden');
             } else {
-                showNotification('La función de manejo de anuncios no está disponible.');
+                showNotification('La funcion de manejo de anuncios no esta disponible.');
             }
         });
-        DOMElements.privacyPolicyBtn.addEventListener('click', () => showNotification('Política de Privacidad (Próximamente)'));
-        DOMElements.updatesBtn.addEventListener('click', () => showNotification('Buscando actualizaciones... (Próximamente)'));
+        
+        // --- MODIFICADO: Ya no muestran "Próximamente" ---
+        DOMElements.privacyPolicyBtn.addEventListener('click', () => console.log('Privacy Policy clicked'));
+        DOMElements.updatesBtn.addEventListener('click', () => console.log('Updates clicked'));
         
         DOMElements.cameraCancelBtn.addEventListener('click', closeCamera);
         DOMElements.cameraCaptureBtn.addEventListener('click', handleCameraCapture);
@@ -1242,11 +1363,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        DOMElements.appVersion.textContent = `Versión ${APP_VERSION}`;
+        DOMElements.appVersion.textContent = `Version ${APP_VERSION}`;
         renderLoader('loader-animation-container');
         renderLoader('camera-loader', true);
         renderLocationStatus();
-        renderSpecialOfferCard();
         renderAnalysisMode();
         renderAnalyzeButton();
 
@@ -1254,10 +1374,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await getVisitorId();
         getLocation();
-        await fetchUserStatus();
+        await fetchUserStatus(); // <-- Esta función ahora también trae los mensajes
         
-        checkMessages();
-        setInterval(checkMessages, 30000);
+        fetchYouTubeVideos(); // <-- Esta función trae los videos (con caché de 2 días)
+        
+        // --- ELIMINADO: 'checkMessages()' y 'setInterval' ya no son necesarios ---
+        // checkMessages();
+        // setInterval(checkMessages, 600000); 
     }
 
     window.handleAdReward = (wasSuccessful, message) => {
