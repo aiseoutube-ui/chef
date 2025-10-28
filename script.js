@@ -82,21 +82,19 @@ document.addEventListener('DOMContentLoaded', () => {
         DOMElements.analyzeButtonContainer = document.getElementById('analyze-button-container');
         DOMElements.loaderAnimationContainer = document.getElementById('loader-animation-container');
         DOMElements.loadingMessage = document.getElementById('loading-message');
-        DOMElements.menuModal = document.getElementById('menu-modal');
-        DOMElements.appVersion = document.getElementById('app-version');
-        DOMElements.privacyPolicyBtn = document.getElementById('privacy-policy-btn');
-        DOMElements.updatesBtn = document.getElementById('updates-btn');
-        DOMElements.simulateAdBtn = document.getElementById('simulate-ad-btn');
-        DOMElements.menuModalCloseBtn = document.getElementById('menu-modal-close-btn');
+        // --- ELIMINADO: Referencias al modal de menú ---
+        // DOMElements.menuModal = document.getElementById('menu-modal');
+        // DOMElements.appVersion = document.getElementById('app-version');
+        // DOMElements.privacyPolicyBtn = document.getElementById('privacy-policy-btn');
+        // DOMElements.updatesBtn = document.getElementById('updates-btn');
+        // DOMElements.simulateAdBtn = document.getElementById('simulate-ad-btn');
+        // DOMElements.menuModalCloseBtn = document.getElementById('menu-modal-close-btn');
         DOMElements.limitModal = document.getElementById('limit-modal');
         DOMElements.limitModalIcon = document.getElementById('limit-modal-icon');
         DOMElements.limitModalTitle = document.getElementById('limit-modal-title');
         DOMElements.limitModalDescription = document.getElementById('limit-modal-description');
         DOMElements.limitModalActions = document.getElementById('limit-modal-actions');
         // --- ELIMINADO: REFERENCIAS AL MODAL PREMIUM ---
-        // DOMElements.premiumSaveModal = document.getElementById('premium-save-modal');
-        // DOMElements.premiumSaveUpgradeBtn = document.getElementById('premium-save-upgrade-btn');
-        // DOMElements.premiumSaveCloseBtn = document.getElementById('premium-save-close-btn');
         DOMElements.cameraModal = document.getElementById('camera-modal');
         DOMElements.cameraVideo = document.getElementById('camera-video');
         DOMElements.cameraCanvas = document.getElementById('camera-canvas');
@@ -868,7 +866,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     // --- ELIMINADO: La función checkMessages() ya no es necesaria ---
-    // async function checkMessages() { ... }
 
     async function callAnalysisApi() {
         if (!state.visitorId) return;
@@ -1082,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     state.imageBase64 = dataUrl.split(',')[1];
                     renderAnalysisMode();
                     renderAnalyzeButton();
+                    closeCamera();
                 };
                 img.src = e.target?.result;
             };
@@ -1298,13 +1296,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        DOMElements.headerLogoBtn.addEventListener('click', () => DOMElements.menuModal.classList.remove('hidden'));
-        DOMElements.menuModal.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
-        
-        if (DOMElements.menuModal.firstElementChild) {
-            DOMElements.menuModal.firstElementChild.addEventListener('click', e => e.stopPropagation()); 
-        }
-        DOMElements.menuModalCloseBtn.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
+        // 🟢 NUEVA LÓGICA: Redirigir al canal de YouTube al hacer clic en el logo
+        DOMElements.headerLogoBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Previene cualquier acción por defecto del botón
+            window.open('https://www.youtube.com/@CusiCusa.?sub_confirmation=1', '_blank');
+        });
+
 
         DOMElements.headerNotificationBtn.addEventListener('click', () => {
             if (state.unreadMessage) {
@@ -1314,27 +1311,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // --- MODIFICADO: Lógica de Modal Premium eliminada ---
-        // DOMElements.premiumSaveCloseBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        // DOMElements.premiumSaveUpgradeBtn.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        // DOMElements.premiumSaveModal.addEventListener('click', () => DOMElements.premiumSaveModal.classList.add('hidden'));
-        // if (DOMElements.premiumSaveModal.firstElementChild) {
-        //     DOMElements.premiumSaveModal.firstElementChild.addEventListener('click', e => e.stopPropagation());
-        // }
-        
-        DOMElements.simulateAdBtn.addEventListener('click', () => {
-            if (window.handleAdReward) {
-                console.log("Simulating successful rewarded ad...");
-                window.handleAdReward(true, 'Simulated ad success');
-                DOMElements.menuModal.classList.add('hidden');
-            } else {
-                showNotification('La funcion de manejo de anuncios no esta disponible.');
-            }
-        });
-        
-        // --- MODIFICADO: Ya no muestran "Próximamente" ---
-        DOMElements.privacyPolicyBtn.addEventListener('click', () => console.log('Privacy Policy clicked'));
-        DOMElements.updatesBtn.addEventListener('click', () => console.log('Updates clicked'));
+        // --- ELIMINADO: Lógica de Modal de Menú / Premium eliminada ---
+        // DOMElements.menuModal.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
+        // DOMElements.menuModalCloseBtn.addEventListener('click', () => DOMElements.menuModal.classList.add('hidden'));
+        // DOMElements.simulateAdBtn.addEventListener('click', ...);
+        // DOMElements.privacyPolicyBtn.addEventListener('click', ...);
+        // DOMElements.updatesBtn.addEventListener('click', ...);
         
         DOMElements.cameraCancelBtn.addEventListener('click', closeCamera);
         DOMElements.cameraCaptureBtn.addEventListener('click', handleCameraCapture);
@@ -1363,7 +1345,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        DOMElements.appVersion.textContent = `Version ${APP_VERSION}`;
+        // --- ELIMINADO: La versión de la app ya no se muestra en el menú
+        // DOMElements.appVersion.textContent = `Version ${APP_VERSION}`; 
         renderLoader('loader-animation-container');
         renderLoader('camera-loader', true);
         renderLocationStatus();
@@ -1377,10 +1360,6 @@ document.addEventListener('DOMContentLoaded', () => {
         await fetchUserStatus(); // <-- Esta función ahora también trae los mensajes
         
         fetchYouTubeVideos(); // <-- Esta función trae los videos (con caché de 2 días)
-        
-        // --- ELIMINADO: 'checkMessages()' y 'setInterval' ya no son necesarios ---
-        // checkMessages();
-        // setInterval(checkMessages, 600000); 
     }
 
     window.handleAdReward = (wasSuccessful, message) => {
