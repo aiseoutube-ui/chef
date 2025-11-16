@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =====================================================================
     
     // IMPORTANTE: Recuerda actualizar esta URL cuando redespliegues tu script de Google.
-    const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbytqUkw9u2HQywOXlNcXsMpJaJZZlh4wXFuDwme3GFJdk-gKgT7JUkT0Cn9mpjQXOfX2A/exec'; 
+    const GOOGLE_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyUzKVvEvS1pM3q_hobnDtMlJkKqFS_zF-PkpqZdnAcVqjZgSVqgn3fsKd608tdcV0f6Q/exec'; 
 
     const APP_VERSION = "1.0.3"; // Versión actualizada
     const LOADING_MESSAGES = [
@@ -1389,3 +1389,4 @@ document.addEventListener('DOMContentLoaded', () => {
     initialize();
     mostrarUltimoAnalisis();
 });
+
